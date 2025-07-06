@@ -15,7 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($action === 'add' || $action === 'edit') {
         $name = sanitizeInput($_POST['name'] ?? '');
-        $price = (float)($_POST['price_per_session'] ?? 0);
+        $inCityPrice = (float)($_POST['in_city_price'] ?? 0);
+        $outCityPrice = (float)($_POST['out_city_price'] ?? 0);
+        $nightFeeEnabled = isset($_POST['night_fee_enabled']) ? 1 : 0;
         $height = sanitizeInput($_POST['height'] ?? '');
         $weight = sanitizeInput($_POST['weight'] ?? '');
         $description = sanitizeInput($_POST['description'] ?? '');
@@ -23,8 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status = $_POST['status'] ?? 'active';
         $services = $_POST['services'] ?? [];
         
-        if (empty($name) || $price <= 0) {
-            $message = 'Name and valid price are required';
+        if (empty($name) || $inCityPrice <= 0 || $outCityPrice <= 0) {
+            $message = 'Name and valid prices are required';
             $messageType = 'danger';
         } else {
             $db = getDB();
@@ -35,10 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($action === 'add') {
                     // Add new therapist
                     $stmt = $db->prepare("
-                        INSERT INTO therapists (name, price_per_session, height, weight, description, availability_slots, status) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO therapists (name, in_city_price, out_city_price, night_fee_enabled, height, weight, description, availability_slots, status) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
-                    $stmt->execute([$name, $price, $height, $weight, $description, $availability, $status]);
+                    $stmt->execute([$name, $inCityPrice, $outCityPrice, $nightFeeEnabled, $height, $weight, $description, $availability, $status]);
                     $therapistId = $db->lastInsertId();
                     
                 } else {
@@ -46,10 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $therapistId = (int)$_POST['therapist_id'];
                     $stmt = $db->prepare("
                         UPDATE therapists 
-                        SET name = ?, price_per_session = ?, height = ?, weight = ?, description = ?, availability_slots = ?, status = ?
+                        SET name = ?, in_city_price = ?, out_city_price = ?, night_fee_enabled = ?, height = ?, weight = ?, description = ?, availability_slots = ?, status = ?
                         WHERE id = ?
                     ");
-                    $stmt->execute([$name, $price, $height, $weight, $description, $availability, $status, $therapistId]);
+                    $stmt->execute([$name, $inCityPrice, $outCityPrice, $nightFeeEnabled, $height, $weight, $description, $availability, $status, $therapistId]);
                 }
                 
                 // Update services
@@ -154,7 +156,7 @@ $services = getAllServices();
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold">Manage Therapists</h2>
-            <p class="text-muted mb-0">Add, edit, and manage therapist profiles</p>
+            <p class="text-muted mb-0">Add, edit, and manage therapist profiles with custom pricing</p>
         </div>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#therapistModal">
             <i class="bi bi-plus-lg me-2"></i>Add New Therapist
@@ -185,7 +187,9 @@ $services = getAllServices();
                                 <th>ID</th>
                                 <th>Image</th>
                                 <th>Name</th>
-                                <th>Price/Session</th>
+                                <th>In-City Price</th>
+                                <th>Out-City Price</th>
+                                <th>Night Fee</th>
                                 <th>Services</th>
                                 <th>Status</th>
                                 <th>Created</th>
@@ -212,7 +216,22 @@ $services = getAllServices();
                                             <?php echo $therapist['weight'] ? ' W: ' . $therapist['weight'] : ''; ?>
                                         </small>
                                     </td>
-                                    <td><?php echo formatPrice($therapist['price_per_session']); ?></td>
+                                    <td>
+                                        <span class="fw-bold text-success"><?php echo formatPrice($therapist['in_city_price']); ?></span><br>
+                                        <small class="text-muted">Delhi & nearby</small>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-info"><?php echo formatPrice($therapist['out_city_price']); ?></span><br>
+                                        <small class="text-muted">Outside Delhi</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-<?php echo $therapist['night_fee_enabled'] ? 'success' : 'secondary'; ?>">
+                                            <?php echo $therapist['night_fee_enabled'] ? 'Enabled' : 'Disabled'; ?>
+                                        </span><br>
+                                        <?php if ($therapist['night_fee_enabled']): ?>
+                                            <small class="text-muted">+₹1500</small>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <?php foreach (array_slice($therapistServices, 0, 2) as $service): ?>
                                             <span class="badge bg-light text-dark me-1"><?php echo htmlspecialchars($service['name']); ?></span>
@@ -266,9 +285,52 @@ $services = getAllServices();
                             <input type="text" class="form-control" name="name" id="therapistName" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Price per Session (₹) *</label>
-                            <input type="number" class="form-control" name="price_per_session" id="therapistPrice" min="1" required>
+                            <label class="form-label">Status</label>
+                            <select class="form-control" name="status" id="therapistStatus">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
                         </div>
+                        
+                        <!-- Pricing Section -->
+                        <div class="col-12">
+                            <hr>
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-currency-rupee me-2"></i>Pricing Configuration
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">In-City Price (₹) *</label>
+                            <input type="number" class="form-control" name="in_city_price" id="therapistInCityPrice" min="1" required>
+                            <small class="form-text text-muted">Price for Delhi and nearby areas</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Out-City Price (₹) *</label>
+                            <input type="number" class="form-control" name="out_city_price" id="therapistOutCityPrice" min="1" required>
+                            <small class="form-text text-muted">Price for locations outside Delhi</small>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="night_fee_enabled" id="nightFeeEnabled" checked>
+                                <label class="form-check-label" for="nightFeeEnabled">
+                                    <strong>Enable Night Fee</strong>
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">
+                                When enabled, ₹1500 will be added for bookings between 10 PM - 6 AM
+                            </small>
+                        </div>
+                        
+                        <!-- Physical Details -->
+                        <div class="col-12">
+                            <hr>
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-person me-2"></i>Physical Details
+                            </h6>
+                        </div>
+                        
                         <div class="col-md-6">
                             <label class="form-label">Height</label>
                             <input type="text" class="form-control" name="height" id="therapistHeight" placeholder="e.g., 5'6"">
@@ -277,6 +339,15 @@ $services = getAllServices();
                             <label class="form-label">Weight</label>
                             <input type="text" class="form-control" name="weight" id="therapistWeight" placeholder="e.g., 55kg">
                         </div>
+                        
+                        <!-- Services -->
+                        <div class="col-12">
+                            <hr>
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-gear me-2"></i>Services & Specializations
+                            </h6>
+                        </div>
+                        
                         <div class="col-12">
                             <label class="form-label">Services</label>
                             <div class="row">
@@ -293,6 +364,7 @@ $services = getAllServices();
                                 <?php endforeach; ?>
                             </div>
                         </div>
+                        
                         <div class="col-12">
                             <label class="form-label">Description</label>
                             <textarea class="form-control" name="description" id="therapistDescription" rows="3"></textarea>
@@ -302,13 +374,15 @@ $services = getAllServices();
                             <textarea class="form-control" name="availability_slots" id="therapistAvailability" rows="2" 
                                       placeholder="e.g., Mon-Fri: 9 AM - 6 PM, Sat: 10 AM - 4 PM"></textarea>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Status</label>
-                            <select class="form-control" name="status" id="therapistStatus">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
+                        
+                        <!-- Images -->
+                        <div class="col-12">
+                            <hr>
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-images me-2"></i>Images
+                            </h6>
                         </div>
+                        
                         <div class="col-md-6">
                             <label class="form-label">Main Image</label>
                             <input type="file" class="form-control" name="main_image" accept="image/*">
@@ -365,7 +439,9 @@ $extraScripts = '<script>
                     document.getElementById("formAction").value = "edit";
                     document.getElementById("therapistId").value = id;
                     document.getElementById("therapistName").value = data.therapist.name;
-                    document.getElementById("therapistPrice").value = data.therapist.price_per_session;
+                    document.getElementById("therapistInCityPrice").value = data.therapist.in_city_price;
+                    document.getElementById("therapistOutCityPrice").value = data.therapist.out_city_price;
+                    document.getElementById("nightFeeEnabled").checked = data.therapist.night_fee_enabled == 1;
                     document.getElementById("therapistHeight").value = data.therapist.height || "";
                     document.getElementById("therapistWeight").value = data.therapist.weight || "";
                     document.getElementById("therapistDescription").value = data.therapist.description || "";
@@ -397,6 +473,7 @@ $extraScripts = '<script>
         document.getElementById("therapistModalTitle").textContent = "Add New Therapist";
         document.getElementById("formAction").value = "add";
         document.getElementById("therapistId").value = "";
+        document.getElementById("nightFeeEnabled").checked = true;
     });
 </script>';
 

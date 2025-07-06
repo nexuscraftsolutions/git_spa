@@ -48,18 +48,44 @@
                                         <div class="invalid-feedback">Please provide your name.</div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Email *</label>
-                                        <input type="email" class="form-control" name="email" required>
-                                        <div class="invalid-feedback">Please provide a valid email.</div>
+                                        <label class="form-label">Email or Phone *</label>
+                                        <input type="text" class="form-control" name="email" placeholder="Email or 10-digit phone" required>
+                                        <div class="invalid-feedback">Please provide email or phone number.</div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Phone *</label>
-                                        <input type="tel" class="form-control" name="phone" pattern="[0-9]{10}" required>
+                                        <label class="form-label">Phone (if email provided above)</label>
+                                        <input type="tel" class="form-control" name="phone" pattern="[0-9]{10}">
                                         <div class="invalid-feedback">Please provide a valid phone number.</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Your Location</label>
+                                        <input type="text" class="form-control" name="user_location" 
+                                               value="<?php echo htmlspecialchars($_SESSION['user_city'] ?? ''); ?>" 
+                                               placeholder="City name">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Preferred Date</label>
                                         <input type="date" class="form-control" name="preferred_date" min="<?php echo date('Y-m-d'); ?>">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Preferred Time</label>
+                                        <select class="form-control" name="preferred_time">
+                                            <option value="">Select time</option>
+                                            <option value="09:00">9:00 AM</option>
+                                            <option value="10:00">10:00 AM</option>
+                                            <option value="11:00">11:00 AM</option>
+                                            <option value="12:00">12:00 PM</option>
+                                            <option value="14:00">2:00 PM</option>
+                                            <option value="15:00">3:00 PM</option>
+                                            <option value="16:00">4:00 PM</option>
+                                            <option value="17:00">5:00 PM</option>
+                                            <option value="18:00">6:00 PM</option>
+                                            <option value="22:00">10:00 PM (Night)</option>
+                                            <option value="23:00">11:00 PM (Night)</option>
+                                            <option value="00:00">12:00 AM (Night)</option>
+                                            <option value="01:00">1:00 AM (Night)</option>
+                                            <option value="02:00">2:00 AM (Night)</option>
+                                        </select>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Message</label>
@@ -87,6 +113,7 @@
                                     <input type="hidden" name="type" value="booking">
                                     <input type="hidden" name="therapist_id" id="bookingTherapistId">
                                     <input type="hidden" name="total_amount" id="bookingAmount">
+                                    <input type="hidden" name="user_location" id="bookingUserLocation" value="<?php echo htmlspecialchars($_SESSION['user_city'] ?? 'Delhi'); ?>">
                                     
                                     <div class="row g-3">
                                         <div class="col-md-6">
@@ -105,12 +132,19 @@
                                                    value="<?php echo htmlspecialchars($_SESSION['user_phone'] ?? ''); ?>" required>
                                         </div>
                                         <div class="col-md-6">
+                                            <label class="form-label">Your Location *</label>
+                                            <input type="text" class="form-control" name="location_input" id="locationInput"
+                                                   value="<?php echo htmlspecialchars($_SESSION['user_city'] ?? 'Delhi'); ?>" 
+                                                   onchange="updatePricing()" required>
+                                            <small class="form-text text-muted">This affects pricing calculation</small>
+                                        </div>
+                                        <div class="col-md-6">
                                             <label class="form-label">Booking Date *</label>
                                             <input type="date" class="form-control" name="booking_date" min="<?php echo date('Y-m-d'); ?>" required>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Preferred Time *</label>
-                                            <select class="form-control" name="booking_time" required>
+                                            <select class="form-control" name="booking_time" id="bookingTimeSelect" onchange="updatePricing()" required>
                                                 <option value="">Select time</option>
                                                 <option value="09:00">9:00 AM</option>
                                                 <option value="10:00">10:00 AM</option>
@@ -121,6 +155,11 @@
                                                 <option value="16:00">4:00 PM</option>
                                                 <option value="17:00">5:00 PM</option>
                                                 <option value="18:00">6:00 PM</option>
+                                                <option value="22:00">10:00 PM (Night +₹1500)</option>
+                                                <option value="23:00">11:00 PM (Night +₹1500)</option>
+                                                <option value="00:00">12:00 AM (Night +₹1500)</option>
+                                                <option value="01:00">1:00 AM (Night +₹1500)</option>
+                                                <option value="02:00">2:00 AM (Night +₹1500)</option>
                                             </select>
                                         </div>
                                         <div class="col-12">
@@ -134,9 +173,34 @@
                                             <i class="bi bi-credit-card me-2"></i>Payment Information
                                         </h6>
                                         <div class="payment-amount-display mb-3">
-                                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                                <span>Session Amount:</span>
-                                                <span class="fw-bold text-success" id="displayAmount">₹0</span>
+                                            <div class="p-3 bg-light rounded">
+                                                <div class="row">
+                                                    <div class="col-6">
+                                                        <div class="d-flex justify-content-between">
+                                                            <span>Base Amount:</span>
+                                                            <span class="fw-bold" id="baseAmountDisplay">₹0</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <div class="d-flex justify-content-between">
+                                                            <span>Night Fee:</span>
+                                                            <span class="fw-bold" id="nightFeeDisplay">₹0</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <hr class="my-2">
+                                                        <div class="d-flex justify-content-between">
+                                                            <span class="fw-bold">Total Amount:</span>
+                                                            <span class="fw-bold text-success" id="displayAmount">₹0</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-2">
+                                                    <small class="text-muted" id="pricingInfo">
+                                                        <i class="bi bi-info-circle me-1"></i>
+                                                        Pricing will be calculated based on your location and time
+                                                    </small>
+                                                </div>
                                             </div>
                                         </div>
                                         
@@ -214,3 +278,108 @@
 <?php if (RAZORPAY_ENABLED): ?>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <?php endif; ?>
+
+<script>
+// Global variables for pricing
+let currentTherapistId = null;
+
+// Function to update pricing based on location and time
+function updatePricing() {
+    if (!currentTherapistId) return;
+    
+    const location = document.getElementById('locationInput')?.value || 'Delhi';
+    const time = document.getElementById('bookingTimeSelect')?.value;
+    
+    if (!time) {
+        // Reset pricing display
+        document.getElementById('baseAmountDisplay').textContent = '₹0';
+        document.getElementById('nightFeeDisplay').textContent = '₹0';
+        document.getElementById('displayAmount').textContent = '₹0';
+        document.getElementById('pricingInfo').innerHTML = '<i class="bi bi-info-circle me-1"></i>Please select a time to see pricing';
+        return;
+    }
+    
+    // Update user location in hidden field
+    document.getElementById('bookingUserLocation').value = location;
+    
+    // Fetch pricing from server
+    fetch(`get_therapist_pricing.php?id=${currentTherapistId}&location=${encodeURIComponent(location)}&time=${time}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const pricing = data.pricing;
+                
+                document.getElementById('baseAmountDisplay').textContent = '₹' + new Intl.NumberFormat('en-IN').format(pricing.base_price);
+                document.getElementById('nightFeeDisplay').textContent = '₹' + new Intl.NumberFormat('en-IN').format(pricing.night_fee);
+                document.getElementById('displayAmount').textContent = '₹' + new Intl.NumberFormat('en-IN').format(pricing.total_price);
+                document.getElementById('bookingAmount').value = pricing.total_price;
+                
+                // Update pricing info
+                const locationText = pricing.is_in_city ? 'In-City' : 'Out-City';
+                const nightText = pricing.is_night_booking ? ' + Night Fee' : '';
+                document.getElementById('pricingInfo').innerHTML = 
+                    `<i class="bi bi-info-circle me-1"></i>${locationText} pricing${nightText}`;
+            } else {
+                console.error('Pricing calculation failed:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching pricing:', error);
+        });
+}
+
+// Function to open booking modal with therapist data
+function openBookingModal(therapistId) {
+    currentTherapistId = therapistId;
+    
+    // Set therapist ID in all forms
+    const inquiryTherapistId = document.getElementById('inquiryTherapistId');
+    const bookingTherapistId = document.getElementById('bookingTherapistId');
+    
+    if (inquiryTherapistId) inquiryTherapistId.value = therapistId;
+    if (bookingTherapistId) bookingTherapistId.value = therapistId;
+    
+    // Reset pricing display
+    updatePricing();
+    
+    // Fetch therapist details for WhatsApp buttons
+    fetch(`get_therapist_details.php?id=${therapistId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateWhatsAppButtons(data.therapist);
+            }
+        })
+        .catch(error => console.error('Error fetching therapist details:', error));
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
+    modal.show();
+}
+
+function updateWhatsAppButtons(therapist) {
+    const generalBtn = document.getElementById('whatsappGeneralBtn');
+    const bookingBtn = document.getElementById('whatsappBookingBtn');
+    
+    if (generalBtn) {
+        generalBtn.onclick = () => openWhatsAppChat(therapist.name, 'general');
+    }
+    
+    if (bookingBtn) {
+        bookingBtn.onclick = () => openWhatsAppChat(therapist.name, 'booking');
+    }
+}
+
+function openWhatsAppChat(therapistName, type = 'general') {
+    let message = '';
+    
+    if (type === 'booking') {
+        message = `Hi! I'm interested in booking a session with ${therapistName}. Could you please provide more information about availability and pricing?`;
+    } else {
+        message = `Hi! I have some questions about ${therapistName}'s services. Could you please help me?`;
+    }
+    
+    const whatsappUrl = `https://wa.me/917005120041?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+}
+</script>

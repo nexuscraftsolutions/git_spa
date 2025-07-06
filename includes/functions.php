@@ -78,6 +78,68 @@ function getUserIP() {
     }
 }
 
+// Pricing calculation functions
+function calculateTherapistPrice($therapistId, $userLocation = 'Delhi', $bookingTime = null) {
+    $therapist = getTherapistById($therapistId);
+    if (!$therapist) {
+        return ['success' => false, 'message' => 'Therapist not found'];
+    }
+    
+    // Determine if user is in Delhi or nearby areas
+    $isInCity = isInCityLocation($userLocation);
+    
+    // Get base price
+    $basePrice = $isInCity ? $therapist['in_city_price'] : $therapist['out_city_price'];
+    
+    // Calculate night fee
+    $nightFee = 0;
+    $isNightBooking = false;
+    
+    if ($bookingTime && $therapist['night_fee_enabled']) {
+        $isNightBooking = isNightTime($bookingTime);
+        if ($isNightBooking) {
+            $nightFee = 1500; // Fixed night fee
+        }
+    }
+    
+    $totalPrice = $basePrice + $nightFee;
+    
+    return [
+        'success' => true,
+        'base_price' => $basePrice,
+        'night_fee' => $nightFee,
+        'total_price' => $totalPrice,
+        'is_in_city' => $isInCity,
+        'is_night_booking' => $isNightBooking,
+        'location_type' => $isInCity ? 'in_city' : 'out_city'
+    ];
+}
+
+function isInCityLocation($location) {
+    $inCityAreas = [
+        'Delhi', 'New Delhi', 'North Delhi', 'South Delhi', 'East Delhi', 'West Delhi',
+        'Central Delhi', 'Dwarka', 'Rohini', 'Janakpuri', 'Lajpat Nagar', 'Karol Bagh',
+        'Connaught Place', 'Rajouri Garden', 'Pitampura', 'Vasant Kunj', 'Saket',
+        'Greater Kailash', 'Nehru Place', 'Chandni Chowk', 'Punjabi Bagh'
+    ];
+    
+    foreach ($inCityAreas as $area) {
+        if (stripos($location, $area) !== false) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+function isNightTime($time) {
+    // Convert time to 24-hour format for comparison
+    $hour = (int)date('H', strtotime($time));
+    
+    // Night hours: 22:00 (10 PM) to 06:00 (6 AM)
+    return ($hour >= 22 || $hour < 6);
+}
+
 // File upload functions
 function uploadImage($file, $subfolder = '') {
     if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
@@ -125,7 +187,7 @@ function deleteImage($imagePath) {
 
 // User authentication functions
 function isUserLoggedIn() {
-    return isset($_SESSION['user_id']) && isset($_SESSION['user_email']);
+    return isset($_SESSION['user_id']) && (isset($_SESSION['user_email']) || isset($_SESSION['user_phone']));
 }
 
 function isAdminUser() {
@@ -142,12 +204,31 @@ function requireUserLogin() {
 function registerUser($name, $email, $phone, $city, $password) {
     $db = getDB();
     
-    // Check if email already exists
-    $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
-    $stmt->execute([$email]);
+    // Validate that at least email or phone is provided
+    if (empty($email) && empty($phone)) {
+        return ['success' => false, 'message' => 'Either email or phone number is required'];
+    }
+    
+    // Check if email or phone already exists
+    $checkQuery = "SELECT id FROM users WHERE ";
+    $checkParams = [];
+    
+    if (!empty($email) && !empty($phone)) {
+        $checkQuery .= "email = ? OR phone = ?";
+        $checkParams = [$email, $phone];
+    } elseif (!empty($email)) {
+        $checkQuery .= "email = ?";
+        $checkParams = [$email];
+    } else {
+        $checkQuery .= "phone = ?";
+        $checkParams = [$phone];
+    }
+    
+    $stmt = $db->prepare($checkQuery);
+    $stmt->execute($checkParams);
     
     if ($stmt->fetch()) {
-        return ['success' => false, 'message' => 'Email already registered'];
+        return ['success' => false, 'message' => 'Email or phone number already registered'];
     }
     
     // Hash password
@@ -159,7 +240,7 @@ function registerUser($name, $email, $phone, $city, $password) {
             VALUES (?, ?, ?, ?, ?, 'user', 'active')
         ");
         
-        if ($stmt->execute([$name, $email, $phone, $city, $hashedPassword])) {
+        if ($stmt->execute([$name, $email ?: null, $phone ?: null, $city, $hashedPassword])) {
             return ['success' => true, 'message' => 'Account created successfully'];
         }
     } catch (Exception $e) {
@@ -169,11 +250,15 @@ function registerUser($name, $email, $phone, $city, $password) {
     return ['success' => false, 'message' => 'Registration failed'];
 }
 
-function loginUser($email, $password) {
+function loginUser($identifier, $password) {
     $db = getDB();
     
-    $stmt = $db->prepare("SELECT id, name, email, phone, city, password, role, status FROM users WHERE email = ? LIMIT 1");
-    $stmt->execute([$email]);
+    // Check if identifier is email or phone
+    $isEmail = validateEmail($identifier);
+    $field = $isEmail ? 'email' : 'phone';
+    
+    $stmt = $db->prepare("SELECT id, name, email, phone, city, password, role, status FROM users WHERE $field = ? LIMIT 1");
+    $stmt->execute([$identifier]);
     
     if ($user = $stmt->fetch()) {
         if ($user['status'] !== 'active') {
@@ -205,7 +290,7 @@ function loginUser($email, $password) {
         }
     }
     
-    return ['success' => false, 'message' => 'Invalid email or password'];
+    return ['success' => false, 'message' => 'Invalid credentials'];
 }
 
 function logoutUser() {
@@ -346,9 +431,24 @@ function createBooking($data) {
     $db = getDB();
     
     try {
+        // Calculate pricing
+        $pricingResult = calculateTherapistPrice(
+            $data['therapist_id'], 
+            $data['user_location'] ?? 'Delhi', 
+            $data['booking_time']
+        );
+        
+        if (!$pricingResult['success']) {
+            return ['success' => false, 'message' => 'Error calculating price'];
+        }
+        
         $stmt = $db->prepare("
-            INSERT INTO bookings (therapist_id, full_name, email, phone, booking_date, booking_time, message, total_amount, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+            INSERT INTO bookings (
+                therapist_id, full_name, email, phone, booking_date, booking_time, 
+                message, total_amount, base_amount, night_fee, user_location, 
+                is_night_booking, status
+            ) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
         ");
         
         $result = $stmt->execute([
@@ -359,7 +459,11 @@ function createBooking($data) {
             $data['booking_date'],
             $data['booking_time'],
             $data['message'],
-            $data['total_amount']
+            $pricingResult['total_price'],
+            $pricingResult['base_price'],
+            $pricingResult['night_fee'],
+            $data['user_location'] ?? 'Delhi',
+            $pricingResult['is_night_booking']
         ]);
         
         if ($result) {
@@ -376,7 +480,7 @@ function createBooking($data) {
                 'status' => 'new'
             ]);
             
-            return ['success' => true, 'booking_id' => $bookingId];
+            return ['success' => true, 'booking_id' => $bookingId, 'pricing' => $pricingResult];
         }
     } catch (Exception $e) {
         return ['success' => false, 'message' => $e->getMessage()];
@@ -513,7 +617,12 @@ function sendBookingConfirmation($bookingId) {
         $message .= "Therapist: {$booking['therapist_name']}\n";
         $message .= "Date: {$booking['booking_date']}\n";
         $message .= "Time: {$booking['booking_time']}\n";
-        $message .= "Amount: ₹{$booking['total_amount']}\n\n";
+        $message .= "Location: {$booking['user_location']}\n";
+        $message .= "Base Amount: ₹{$booking['base_amount']}\n";
+        if ($booking['night_fee'] > 0) {
+            $message .= "Night Fee: ₹{$booking['night_fee']}\n";
+        }
+        $message .= "Total Amount: ₹{$booking['total_amount']}\n\n";
         $message .= "Thank you for choosing our spa!\n";
         
         $headers = "From: noreply@spa.com\r\n";
@@ -578,13 +687,14 @@ function initializeDatabase() {
         "CREATE TABLE IF NOT EXISTS users (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
-            email VARCHAR(100) UNIQUE NOT NULL,
-            phone VARCHAR(20),
+            email VARCHAR(100) NULL,
+            phone VARCHAR(20) NULL,
             city VARCHAR(100),
             password VARCHAR(255) NOT NULL,
             role ENUM('user', 'admin') DEFAULT 'user',
             status ENUM('active', 'inactive') DEFAULT 'active',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT check_email_or_phone CHECK (email IS NOT NULL OR phone IS NOT NULL)
         )",
         
         "CREATE TABLE IF NOT EXISTS services (
@@ -600,7 +710,10 @@ function initializeDatabase() {
         "CREATE TABLE IF NOT EXISTS therapists (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
-            price_per_session DECIMAL(10,2) NOT NULL,
+            price_per_session DECIMAL(10,2) NOT NULL DEFAULT 0,
+            in_city_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+            out_city_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+            night_fee_enabled BOOLEAN DEFAULT TRUE,
             height VARCHAR(20),
             weight VARCHAR(20),
             description TEXT,
@@ -638,6 +751,10 @@ function initializeDatabase() {
             booking_time TIME NOT NULL,
             message TEXT,
             total_amount DECIMAL(10,2) NOT NULL,
+            base_amount DECIMAL(10,2) DEFAULT 0,
+            night_fee DECIMAL(10,2) DEFAULT 0,
+            user_location VARCHAR(100) DEFAULT 'Delhi',
+            is_night_booking BOOLEAN DEFAULT FALSE,
             payment_id VARCHAR(255),
             payment_status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
             status ENUM('pending', 'confirmed', 'cancelled', 'completed') DEFAULT 'pending',

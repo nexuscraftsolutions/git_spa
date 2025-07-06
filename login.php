@@ -17,15 +17,15 @@ $pageTitle = 'Login';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = sanitizeInput($_POST['email'] ?? '');
+    $identifier = sanitizeInput($_POST['identifier'] ?? '');
     $password = $_POST['password'] ?? '';
     
-    if (empty($email) || empty($password)) {
-        $error = 'Please enter both email and password';
+    if (empty($identifier) || empty($password)) {
+        $error = 'Please enter both email/phone and password';
     } else {
-        $result = loginUser($email, $password);
+        $result = loginUser($identifier, $password);
         if ($result['success']) {
-            // Role-based redirection - FIXED
+            // Role-based redirection
             if ($result['user']['role'] === 'admin') {
                 header('Location: admin/index.php');
             } else {
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="auth-card">
                     <div class="auth-header">
                         <h2 class="text-center mb-4">Welcome Back</h2>
-                        <p class="text-center text-muted">Sign in to your account</p>
+                        <p class="text-center text-muted">Sign in with your email or phone number</p>
                     </div>
                     
                     <?php if ($error): ?>
@@ -59,10 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     <form method="POST" class="needs-validation" novalidate>
                         <div class="mb-3">
-                            <label class="form-label">Email Address</label>
-                            <input type="email" class="form-control" name="email" 
-                                   value="<?php echo htmlspecialchars($email ?? ''); ?>" required>
-                            <div class="invalid-feedback">Please enter a valid email.</div>
+                            <label class="form-label">Email or Phone Number</label>
+                            <input type="text" class="form-control" name="identifier" 
+                                   value="<?php echo htmlspecialchars($identifier ?? ''); ?>" 
+                                   placeholder="Enter email or 10-digit phone number" required>
+                            <div class="invalid-feedback">Please enter your email or phone number.</div>
                         </div>
                         
                         <div class="mb-4">
@@ -82,13 +83,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <p class="mb-0">Don't have an account? <a href="signup.php" class="text-primary">Sign up here</a></p>
                     </div>
                     
-                    <!--<div class="text-center mt-4">-->
-                    <!--    <div class="alert alert-info">-->
-                    <!--        <strong>Demo Credentials:</strong><br>-->
-                    <!--        <strong>Admin:</strong> admin@spa.com / admin123<br>-->
-                    <!--        <strong>User:</strong> user@spa.com / user123-->
-                    <!--    </div>-->
-                    <!--</div>-->
+                    <div class="text-center mt-4">
+                        <div class="alert alert-info">
+                            <strong>Demo Credentials:</strong><br>
+                            <strong>Admin:</strong> admin@spa.com / admin123<br>
+                            <strong>User:</strong> user@spa.com / user123
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

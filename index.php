@@ -10,35 +10,9 @@ $pageTitle = 'Home';
 $therapists = getAllTherapists();
 $services = getAllServices();
 
-// // Get filter parameters for price block
-// $priceFilter = $_GET['price_filter'] ?? 'monthly';
-
-// // Calculate filtered stats
-// $db = getDB();
-// $dateCondition = '';
-// switch ($priceFilter) {
-//     case 'daily':
-//         $dateCondition = "DATE(created_at) = CURDATE()";
-//         break;
-//     case 'monthly':
-//         $dateCondition = "MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())";
-//         break;
-//     case 'yearly':
-//         $dateCondition = "YEAR(created_at) = YEAR(CURRENT_DATE())";
-//         break;
-// }
-
-// $stmt = $db->prepare("
-//     SELECT SUM(total_amount) as revenue, COUNT(*) as bookings 
-//     FROM bookings 
-//     WHERE $dateCondition 
-//     AND status IN ('confirmed', 'completed')
-// ");
-// $stmt->execute();
-// $priceStats = $stmt->fetch();
-// $filteredRevenue = $priceStats['revenue'] ?? 0;
-// $filteredBookings = $priceStats['bookings'] ?? 0;
-// ?>
+// Get user's location for pricing
+$userLocation = $_SESSION['user_city'] ?? detectUserLocation()['city'];
+?>
 
 <?php include 'includes/header.php'; ?>
 
@@ -49,6 +23,33 @@ $services = getAllServices();
             <div class="col-lg-6 hero-content">
                 <h1 class="display-4 fw-bold mb-4 fade-in">Welcome to Hammam Spa</h1>
                 <p class="lead mb-4 fade-in">Experience ultimate relaxation with our professional therapists and premium spa services. Rejuvenate your mind, body, and soul in our tranquil sanctuary.</p>
+                
+                <!-- Pricing Toggle Buttons -->
+                <div class="pricing-toggle mb-4 fade-in">
+                    <div class="btn-group" role="group" aria-label="Pricing options">
+                        <input type="radio" class="btn-check" name="pricingType" id="inCityPricing" value="in_city" checked>
+                        <label class="btn btn-outline-light" for="inCityPricing">
+                            <i class="bi bi-building me-2"></i>In-City Pricing
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="pricingType" id="outCityPricing" value="out_city">
+                        <label class="btn btn-outline-light" for="outCityPricing">
+                            <i class="bi bi-geo-alt me-2"></i>Out-City Pricing
+                        </label>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-light opacity-75">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Your location: <strong><?php echo htmlspecialchars($userLocation); ?></strong>
+                            <?php if (isInCityLocation($userLocation)): ?>
+                                (In-City rates apply)
+                            <?php else: ?>
+                                (Out-City rates apply)
+                            <?php endif; ?>
+                        </small>
+                    </div>
+                </div>
+                
                 <div class="d-flex gap-3 fade-in">
                     <a href="models.php" class="btn btn-light btn-lg">
                         <i class="bi bi-people me-2"></i>View Therapists
@@ -68,7 +69,7 @@ $services = getAllServices();
     </div>
 </section>
 
-<!-- Stats Section with Price Filter -->
+<!-- Stats Section -->
 <section class="py-5 bg-white">
     <div class="container">
         <div class="row g-4">
@@ -168,9 +169,13 @@ $services = getAllServices();
                 <?php foreach (array_slice($therapists, 0, 3) as $therapist): 
                     $images = getTherapistImages($therapist['id']);
                     $therapistServices = getTherapistServices($therapist['id']);
+                    
+                    // Calculate pricing based on user location
+                    $isInCity = isInCityLocation($userLocation);
+                    $displayPrice = $isInCity ? $therapist['in_city_price'] : $therapist['out_city_price'];
                 ?>
                     <div class="col-lg-4">
-                        <div class="therapist-card-modern">
+                        <div class="therapist-card-modern" data-therapist-id="<?php echo $therapist['id']; ?>">
                             <!-- Image Slider -->
                             <div class="therapist-slider" id="slider-<?php echo $therapist['id']; ?>">
                                 <div class="slider-container">
@@ -215,7 +220,14 @@ $services = getAllServices();
                                 <h5 class="therapist-name"><?php echo htmlspecialchars($therapist['name']); ?></h5>
                                 
                                 <div class="price-display">
-                                    <?php echo formatPrice($therapist['price_per_session']); ?>/session
+                                    <span class="dynamic-price" 
+                                          data-in-city="<?php echo $therapist['in_city_price']; ?>"
+                                          data-out-city="<?php echo $therapist['out_city_price']; ?>">
+                                        <?php echo formatPrice($displayPrice); ?>
+                                    </span>/session
+                                    <?php if ($therapist['night_fee_enabled']): ?>
+                                        <br><small class="text-muted">+₹1500 night fee (10 PM - 6 AM)</small>
+                                    <?php endif; ?>
                                 </div>
                                 
                                 <div class="services-tags">
@@ -254,42 +266,6 @@ $services = getAllServices();
         <?php endif; ?>
     </div>
 </section>
-
-<!-- Testimonials Section -->
-<!--<section class="py-5 services-section">-->
-<!--    <div class="container">-->
-<!--        <h2 class="section-title display-5 fw-bold">What Our Clients Say</h2>-->
-<!--        <div class="row g-4">-->
-<!--            <div class="col-lg-4">-->
-<!--                <div class="testimonial-card slide-up">-->
-<!--                    <img src="https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150" -->
-<!--                         class="testimonial-avatar" alt="Client">-->
-<!--                    <p class="mb-3">"Amazing experience! The therapists are highly skilled and the atmosphere is so relaxing. I feel completely rejuvenated after every session."</p>-->
-<!--                    <h6 class="fw-bold">Sarah Johnson</h6>-->
-<!--                    <small class="text-muted">Regular Client</small>-->
-<!--                </div>-->
-<!--            </div>-->
-<!--            <div class="col-lg-4">-->
-<!--                <div class="testimonial-card slide-up">-->
-<!--                    <img src="https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150" -->
-<!--                         class="testimonial-avatar" alt="Client">-->
-<!--                    <p class="mb-3">"Professional service and excellent facilities. The deep tissue massage helped me recover from my sports injury. Highly recommended!"</p>-->
-<!--                    <h6 class="fw-bold">Michael Chen</h6>-->
-<!--                    <small class="text-muted">Athlete</small>-->
-<!--                </div>-->
-<!--            </div>-->
-<!--            <div class="col-lg-4">-->
-<!--                <div class="testimonial-card slide-up">-->
-<!--                    <img src="https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=150" -->
-<!--                         class="testimonial-avatar" alt="Client">-->
-<!--                    <p class="mb-3">"The aromatherapy sessions are divine! Perfect place to unwind and escape from daily stress. The staff is incredibly caring and professional."</p>-->
-<!--                    <h6 class="fw-bold">Emma Davis</h6>-->
-<!--                    <small class="text-muted">Business Executive</small>-->
-<!--                </div>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--</section>-->
 
 <!-- Contact Section -->
 <section id="contact" class="py-5 services-section">
@@ -337,32 +313,40 @@ $services = getAllServices();
 
 <?php 
 $extraScripts = '<script>
-    // Price filter functionality
-    document.querySelectorAll("input[name=\"priceFilter\"]").forEach(radio => {
+    // Pricing toggle functionality
+    document.querySelectorAll("input[name=\"pricingType\"]").forEach(radio => {
         radio.addEventListener("change", function() {
-            const filter = this.value;
+            const priceType = this.value;
             
-            // Update URL with filter parameter
-            const url = new URL(window.location);
-            url.searchParams.set("price_filter", filter);
-            window.history.pushState({}, "", url);
+            // Update all dynamic prices
+            document.querySelectorAll(".dynamic-price").forEach(priceElement => {
+                const inCityPrice = parseFloat(priceElement.dataset.inCity);
+                const outCityPrice = parseFloat(priceElement.dataset.outCity);
+                const price = priceType === "in_city" ? inCityPrice : outCityPrice;
+                
+                priceElement.textContent = "₹" + new Intl.NumberFormat("en-IN").format(price);
+            });
             
-            // Update labels
-            document.getElementById("bookingsLabel").textContent = filter.charAt(0).toUpperCase() + filter.slice(1) + " Bookings";
-            document.getElementById("revenueLabel").textContent = filter.charAt(0).toUpperCase() + filter.slice(1) + " Revenue";
-            
-            // Fetch updated data
-            fetch(`get_filtered_stats.php?filter=${filter}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById("filteredBookings").textContent = data.bookings;
-                        document.getElementById("filteredRevenue").textContent = "₹" + new Intl.NumberFormat("en-IN").format(data.revenue);
-                    }
-                })
-                .catch(error => console.error("Error:", error));
+            // Store preference in localStorage
+            localStorage.setItem("preferredPricingType", priceType);
         });
     });
+    
+    // Load saved pricing preference
+    document.addEventListener("DOMContentLoaded", function() {
+        const savedPricingType = localStorage.getItem("preferredPricingType");
+        if (savedPricingType) {
+            const radio = document.getElementById(savedPricingType === "in_city" ? "inCityPricing" : "outCityPricing");
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event("change"));
+            }
+        }
+    });
+    
+    // Set user location for pricing calculations
+    window.userLocation = "<?php echo htmlspecialchars($userLocation); ?>";
+    window.isInCity = <?php echo isInCityLocation($userLocation) ? 'true' : 'false'; ?>;
 </script>';
 
 include 'includes/footer.php'; 

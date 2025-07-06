@@ -24,11 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
     
-    if (empty($name) || empty($email) || empty($phone) || empty($password)) {
-        $error = 'Please fill in all required fields';
-    } elseif (!validateEmail($email)) {
+    // Validate that at least email or phone is provided
+    if (empty($name) || empty($password) || (empty($email) && empty($phone))) {
+        $error = 'Please fill in name, password, and either email or phone number';
+    } elseif (!empty($email) && !validateEmail($email)) {
         $error = 'Please enter a valid email address';
-    } elseif (!validatePhone($phone)) {
+    } elseif (!empty($phone) && !validatePhone($phone)) {
         $error = 'Please enter a valid 10-digit phone number';
     } elseif (strlen($password) < 6) {
         $error = 'Password must be at least 6 characters long';
@@ -81,18 +82,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             
                             <div class="col-md-6">
-                                <label class="form-label">Email Address *</label>
+                                <label class="form-label">Email Address</label>
                                 <input type="email" class="form-control" name="email" 
-                                       value="<?php echo htmlspecialchars($email ?? ''); ?>" required>
+                                       value="<?php echo htmlspecialchars($email ?? ''); ?>">
                                 <div class="invalid-feedback">Please enter a valid email.</div>
                             </div>
                             
                             <div class="col-md-6">
-                                <label class="form-label">Phone Number *</label>
+                                <label class="form-label">Phone Number</label>
                                 <input type="tel" class="form-control" name="phone" 
                                        value="<?php echo htmlspecialchars($phone ?? ''); ?>" 
-                                       pattern="[0-9]{10}" required>
+                                       pattern="[0-9]{10}" placeholder="10-digit number">
                                 <div class="invalid-feedback">Please enter a valid 10-digit phone number.</div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Note:</strong> You must provide either an email address or phone number (or both) to create an account.
+                                </div>
                             </div>
                             
                             <div class="col-12">
@@ -102,9 +110,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                        placeholder="<?php echo $detectedLocation['success'] ? 'Auto-detected: ' . $detectedLocation['city'] : 'Enter your city'; ?>">
                                 <small class="form-text text-muted">
                                     <?php if ($detectedLocation['success']): ?>
-                                        <i class="bi bi-geo-alt text-success"></i> Location detected automatically. You can change it if needed.
+                                        <i class="bi bi-geo-alt text-success"></i> Location detected automatically. This affects pricing - you can change it if needed.
                                     <?php else: ?>
-                                        <i class="bi bi-geo-alt text-muted"></i> Please enter your city manually.
+                                        <i class="bi bi-geo-alt text-muted"></i> Please enter your city manually. This affects pricing.
                                     <?php endif; ?>
                                 </small>
                             </div>
