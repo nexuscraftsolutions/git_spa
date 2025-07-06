@@ -203,7 +203,7 @@ function handleBookingSubmission(e) {
                     key: data.razorpay_key,
                     amount: data.order.amount,
                     currency: data.order.currency,
-                    name: 'Hammam Spa',
+                    name: 'Serenity Spa',
                     description: 'Spa Session Booking',
                     order_id: data.order.id,
                     handler: function(response) {
@@ -298,60 +298,8 @@ function verifyPaymentAndCompleteBooking(paymentResponse, formData) {
     });
 }
 
-// Global variables for pricing
-let currentTherapistId = null;
-
-// Function to update pricing based on location and time
-function updatePricing() {
-    if (!currentTherapistId) return;
-    
-    const location = document.getElementById('locationInput')?.value || 'Delhi';
-    const time = document.getElementById('bookingTimeSelect')?.value;
-    
-    if (!time) {
-        // Reset pricing display
-        document.getElementById('baseAmountDisplay').textContent = '₹0';
-        document.getElementById('nightFeeDisplay').textContent = '₹0';
-        document.getElementById('displayAmount').textContent = '₹0';
-        document.getElementById('pricingInfo').innerHTML = '<i class="bi bi-info-circle me-1"></i>Please select a time to see pricing';
-        return;
-    }
-    
-    // Update user location in hidden field
-    document.getElementById('bookingUserLocation').value = location;
-    
-    // Fetch pricing from server
-    fetch(`get_therapist_pricing.php?id=${currentTherapistId}&location=${encodeURIComponent(location)}&time=${time}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const pricing = data.pricing;
-                
-                document.getElementById('baseAmountDisplay').textContent = '₹' + new Intl.NumberFormat('en-IN').format(pricing.base_price);
-                document.getElementById('nightFeeDisplay').textContent = '₹' + new Intl.NumberFormat('en-IN').format(pricing.night_fee);
-                document.getElementById('displayAmount').textContent = '₹' + new Intl.NumberFormat('en-IN').format(pricing.total_price);
-                document.getElementById('bookingAmount').value = pricing.total_price;
-                
-                // Update pricing info
-                const locationText = pricing.is_in_city ? 'In-City' : 'Out-City';
-                const nightText = pricing.is_night_booking ? ' + Night Fee' : '';
-                document.getElementById('pricingInfo').innerHTML = 
-                    `<i class="bi bi-info-circle me-1"></i>${locationText} pricing${nightText}`;
-            } else {
-                console.error('Pricing calculation failed:', data.message);
-                showAlert('danger', 'Error calculating pricing: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching pricing:', error);
-            showAlert('danger', 'Error loading pricing information');
-        });
-}
-
-// Function to open booking modal with therapist data
+// Booking modal functions
 function openBookingModal(therapistId) {
-    currentTherapistId = therapistId;
-    
     // Set therapist ID in all forms
     const inquiryTherapistId = document.getElementById('inquiryTherapistId');
     const bookingTherapistId = document.getElementById('bookingTherapistId');
@@ -359,14 +307,23 @@ function openBookingModal(therapistId) {
     if (inquiryTherapistId) inquiryTherapistId.value = therapistId;
     if (bookingTherapistId) bookingTherapistId.value = therapistId;
     
-    // Reset pricing display
-    updatePricing();
-    
-    // Fetch therapist details for WhatsApp buttons
+    // Fetch therapist details for pricing
     fetch(`get_therapist_details.php?id=${therapistId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                const bookingAmount = document.getElementById('bookingAmount');
+                const displayAmount = document.getElementById('displayAmount');
+                
+                if (bookingAmount) {
+                    bookingAmount.value = data.therapist.price_per_session;
+                }
+                
+                if (displayAmount) {
+                    displayAmount.textContent = `₹${data.therapist.price_per_session}`;
+                }
+                
+                // Update WhatsApp buttons
                 updateWhatsAppButtons(data.therapist);
             }
         })
@@ -485,7 +442,6 @@ window.changeMainImage = changeMainImage;
 window.openBookingModal = openBookingModal;
 window.openWhatsAppChat = openWhatsAppChat;
 window.showAlert = showAlert;
-window.updatePricing = updatePricing;
 
 // Set Razorpay availability globally
 window.razorpayEnabled = typeof RAZORPAY_ENABLED !== 'undefined' ? RAZORPAY_ENABLED : false;
