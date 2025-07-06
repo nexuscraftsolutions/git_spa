@@ -1,4 +1,8 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 session_start();
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
@@ -41,7 +45,7 @@ $userLocation = $_SESSION['user_city'] ?? detectUserLocation()['city'];
                         <small class="text-light opacity-75">
                             <i class="bi bi-info-circle me-1"></i>
                             Your location: <strong><?php echo htmlspecialchars($userLocation); ?></strong>
-                            <?php if (isInCityLocation($userLocation)): ?>
+                            <?php if (function_exists('isInCityLocation') && isInCityLocation($userLocation)): ?>
                                 (In-City rates apply)
                             <?php else: ?>
                                 (Out-City rates apply)
@@ -170,9 +174,9 @@ $userLocation = $_SESSION['user_city'] ?? detectUserLocation()['city'];
                     $images = getTherapistImages($therapist['id']);
                     $therapistServices = getTherapistServices($therapist['id']);
                     
-                    // Calculate pricing based on user location
-                    $isInCity = isInCityLocation($userLocation);
-                    $displayPrice = $isInCity ? $therapist['in_city_price'] : $therapist['out_city_price'];
+                    // Calculate pricing based on user location - with safety check
+                    $isInCity = function_exists('isInCityLocation') ? isInCityLocation($userLocation) : true;
+                    $displayPrice = $isInCity ? ($therapist['in_city_price'] ?? $therapist['price_per_session']) : ($therapist['out_city_price'] ?? $therapist['price_per_session']);
                 ?>
                     <div class="col-lg-4">
                         <div class="therapist-card-modern" data-therapist-id="<?php echo $therapist['id']; ?>">
@@ -221,11 +225,11 @@ $userLocation = $_SESSION['user_city'] ?? detectUserLocation()['city'];
                                 
                                 <div class="price-display">
                                     <span class="dynamic-price" 
-                                          data-in-city="<?php echo $therapist['in_city_price']; ?>"
-                                          data-out-city="<?php echo $therapist['out_city_price']; ?>">
+                                          data-in-city="<?php echo $therapist['in_city_price'] ?? $therapist['price_per_session']; ?>"
+                                          data-out-city="<?php echo $therapist['out_city_price'] ?? $therapist['price_per_session']; ?>">
                                         <?php echo formatPrice($displayPrice); ?>
                                     </span>/session
-                                    <?php if ($therapist['night_fee_enabled']): ?>
+                                    <?php if (($therapist['night_fee_enabled'] ?? false)): ?>
                                         <br><small class="text-muted">+₹1500 night fee (10 PM - 6 AM)</small>
                                     <?php endif; ?>
                                 </div>
@@ -346,7 +350,7 @@ $extraScripts = '<script>
     
     // Set user location for pricing calculations
     window.userLocation = "<?php echo htmlspecialchars($userLocation); ?>";
-    window.isInCity = <?php echo isInCityLocation($userLocation) ? 'true' : 'false'; ?>;
+    window.isInCity = <?php echo (function_exists('isInCityLocation') && isInCityLocation($userLocation)) ? 'true' : 'false'; ?>;
 </script>';
 
 include 'includes/footer.php'; 

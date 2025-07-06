@@ -1,10 +1,17 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 session_start();
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
 $pageTitle = 'Our Therapists';
 $therapists = getAllTherapists();
+
+// Get user's location for pricing
+$userLocation = $_SESSION['user_city'] ?? detectUserLocation()['city'];
 ?>
 
 <?php include 'includes/header.php'; ?>
@@ -16,6 +23,32 @@ $therapists = getAllTherapists();
             <div class="col-lg-8">
                 <h1 class="display-4 fw-bold mb-4">Our Expert Therapists</h1>
                 <p class="lead mb-4">Meet our professional team of certified therapists dedicated to your wellness and relaxation journey.</p>
+                
+                <!-- Pricing Toggle Buttons -->
+                <div class="pricing-toggle mb-4">
+                    <div class="btn-group" role="group" aria-label="Pricing options">
+                        <input type="radio" class="btn-check" name="pricingType" id="inCityPricing" value="in_city" checked>
+                        <label class="btn btn-outline-light" for="inCityPricing">
+                            <i class="bi bi-building me-2"></i>In-City Pricing
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="pricingType" id="outCityPricing" value="out_city">
+                        <label class="btn btn-outline-light" for="outCityPricing">
+                            <i class="bi bi-geo-alt me-2"></i>Out-City Pricing
+                        </label>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-light opacity-75">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Your location: <strong><?php echo htmlspecialchars($userLocation); ?></strong>
+                            <?php if (function_exists('isInCityLocation') && isInCityLocation($userLocation)): ?>
+                                (In-City rates apply)
+                            <?php else: ?>
+                                (Out-City rates apply)
+                            <?php endif; ?>
+                        </small>
+                    </div>
+                </div>
             </div>
             <div class="col-lg-4">
                 <div class="hero-stats">
@@ -43,9 +76,13 @@ $therapists = getAllTherapists();
                 <?php foreach ($therapists as $therapist): 
                     $images = getTherapistImages($therapist['id']);
                     $therapistServices = getTherapistServices($therapist['id']);
+                    
+                    // Calculate pricing based on user location - with safety check
+                    $isInCity = function_exists('isInCityLocation') ? isInCityLocation($userLocation) : true;
+                    $displayPrice = $isInCity ? ($therapist['in_city_price'] ?? $therapist['price_per_session']) : ($therapist['out_city_price'] ?? $therapist['price_per_session']);
                 ?>
                     <div class="col-lg-4 col-md-6">
-                        <div class="therapist-card-modern">
+                        <div class="therapist-card-modern" data-therapist-id="<?php echo $therapist['id']; ?>">
                             <!-- Image Slider -->
                             <div class="therapist-slider" id="slider-<?php echo $therapist['id']; ?>">
                                 <div class="slider-container">
@@ -90,7 +127,14 @@ $therapists = getAllTherapists();
                                 <h5 class="therapist-name"><?php echo htmlspecialchars($therapist['name']); ?></h5>
                                 
                                 <div class="price-display">
-                                    <?php echo formatPrice($therapist['price_per_session']); ?>/session
+                                    <span class="dynamic-price" 
+                                          data-in-city="<?php echo $therapist['in_city_price'] ?? $therapist['price_per_session']; ?>"
+                                          data-out-city="<?php echo $therapist['out_city_price'] ?? $therapist['price_per_session']; ?>">
+                                        <?php echo formatPrice($displayPrice); ?>
+                                    </span>/session
+                                    <?php if (($therapist['night_fee_enabled'] ?? false)): ?>
+                                        <br><small class="text-muted">+₹1500 night fee (10 PM - 6 AM)</small>
+                                    <?php endif; ?>
                                 </div>
                                 
                                 <div class="services-tags">
@@ -125,4 +169,44 @@ $therapists = getAllTherapists();
 </section>
 
 <?php include 'includes/booking_modal.php'; ?>
-<?php include 'includes/footer.php'; ?>
+
+<?php 
+$extraScripts = '<script>
+    // Pricing toggle functionality
+    document.querySelectorAll("input[name=\"pricingType\"]").forEach(radio => {
+        radio.addEventListener("change", function() {
+            const priceType = this.value;
+            
+            // Update all dynamic prices
+            document.querySelectorAll(".dynamic-price").forEach(priceElement => {
+                const inCityPrice = parseFloat(priceElement.dataset.inCity);
+                const outCityPrice = parseFloat(priceElement.dataset.outCity);
+                const price = priceType === "in_city" ? inCityPrice : outCityPrice;
+                
+                priceElement.textContent = "₹" + new Intl.NumberFormat("en-IN").format(price);
+            });
+            
+            // Store preference in localStorage
+            localStorage.setItem("preferredPricingType", priceType);
+        });
+    });
+    
+    // Load saved pricing preference
+    document.addEventListener("DOMContentLoaded", function() {
+        const savedPricingType = localStorage.getItem("preferredPricingType");
+        if (savedPricingType) {
+            const radio = document.getElementById(savedPricingType === "in_city" ? "inCityPricing" : "outCityPricing");
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event("change"));
+            }
+        }
+    });
+    
+    // Set user location for pricing calculations
+    window.userLocation = "<?php echo htmlspecialchars($userLocation); ?>";
+    window.isInCity = <?php echo (function_exists('isInCityLocation') && isInCityLocation($userLocation)) ? 'true' : 'false'; ?>;
+</script>';
+
+include 'includes/footer.php'; 
+?>
