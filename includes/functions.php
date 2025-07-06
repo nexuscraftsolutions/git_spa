@@ -382,48 +382,73 @@ function logoutAdmin() {
 
 // Therapist functions
 function getAllTherapists($status = 'active') {
-    $db = getDB();
-    if ($status === 'all') {
-        $stmt = $db->prepare("SELECT * FROM therapists ORDER BY created_at DESC");
-        $stmt->execute();
-    } else {
-        $stmt = $db->prepare("SELECT * FROM therapists WHERE status = ? ORDER BY created_at DESC");
-        $stmt->execute([$status]);
+    try {
+        $db = getDB();
+        if ($status === 'all') {
+            $stmt = $db->prepare("SELECT * FROM therapists ORDER BY created_at DESC");
+            $stmt->execute();
+        } else {
+            $stmt = $db->prepare("SELECT * FROM therapists WHERE status = ? ORDER BY created_at DESC");
+            $stmt->execute([$status]);
+        }
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Error in getAllTherapists: " . $e->getMessage());
+        return [];
     }
-    return $stmt->fetchAll();
 }
 
 function getTherapistById($id) {
-    $db = getDB();
-    $stmt = $db->prepare("SELECT * FROM therapists WHERE id = ?");
-    $stmt->execute([$id]);
-    return $stmt->fetch();
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT * FROM therapists WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    } catch (Exception $e) {
+        error_log("Error in getTherapistById: " . $e->getMessage());
+        return false;
+    }
 }
 
 function getTherapistImages($therapistId) {
-    $db = getDB();
-    $stmt = $db->prepare("SELECT * FROM therapist_images WHERE therapist_id = ? ORDER BY is_main DESC, id ASC");
-    $stmt->execute([$therapistId]);
-    return $stmt->fetchAll();
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT * FROM therapist_images WHERE therapist_id = ? ORDER BY is_main DESC, id ASC");
+        $stmt->execute([$therapistId]);
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Error in getTherapistImages: " . $e->getMessage());
+        return [];
+    }
 }
 
 function getTherapistServices($therapistId) {
-    $db = getDB();
-    $stmt = $db->prepare("
-        SELECT s.* FROM services s 
-        JOIN therapist_services ts ON s.id = ts.service_id 
-        WHERE ts.therapist_id = ?
-        ORDER BY s.name
-    ");
-    $stmt->execute([$therapistId]);
-    return $stmt->fetchAll();
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("
+            SELECT s.* FROM services s 
+            JOIN therapist_services ts ON s.id = ts.service_id 
+            WHERE ts.therapist_id = ?
+            ORDER BY s.name
+        ");
+        $stmt->execute([$therapistId]);
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Error in getTherapistServices: " . $e->getMessage());
+        return [];
+    }
 }
 
 function getAllServices() {
-    $db = getDB();
-    $stmt = $db->prepare("SELECT * FROM services ORDER BY name");
-    $stmt->execute();
-    return $stmt->fetchAll();
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT * FROM services ORDER BY name");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Error in getAllServices: " . $e->getMessage());
+        return [];
+    }
 }
 
 // Booking functions
@@ -490,22 +515,26 @@ function createBooking($data) {
 }
 
 function getAllBookings() {
-    $db = getDB();
-    $stmt = $db->prepare("
-        SELECT b.*, t.name as therapist_name 
-        FROM bookings b 
-        LEFT JOIN therapists t ON b.therapist_id = t.id 
-        ORDER BY b.created_at DESC
-    ");
-    $stmt->execute();
-    return $stmt->fetchAll();
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("
+            SELECT b.*, t.name as therapist_name 
+            FROM bookings b 
+            LEFT JOIN therapists t ON b.therapist_id = t.id 
+            ORDER BY b.created_at DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Error in getAllBookings: " . $e->getMessage());
+        return [];
+    }
 }
 
 // Lead management functions
 function createLead($data) {
-    $db = getDB();
-    
     try {
+        $db = getDB();
         $stmt = $db->prepare("
             INSERT INTO leads (type, therapist_id, full_name, email, phone, message, status) 
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -521,14 +550,14 @@ function createLead($data) {
             $data['status'] ?? 'new'
         ]);
     } catch (Exception $e) {
+        error_log("Error in createLead: " . $e->getMessage());
         return false;
     }
 }
 
 function createInquiry($data) {
-    $db = getDB();
-    
     try {
+        $db = getDB();
         $stmt = $db->prepare("
             INSERT INTO leads (type, therapist_id, full_name, email, phone, message, status) 
             VALUES ('inquiry', ?, ?, ?, ?, ?, 'new')
@@ -546,6 +575,7 @@ function createInquiry($data) {
             return ['success' => true, 'lead_id' => $db->lastInsertId()];
         }
     } catch (Exception $e) {
+        error_log("Error in createInquiry: " . $e->getMessage());
         return ['success' => false, 'message' => $e->getMessage()];
     }
     
@@ -599,36 +629,40 @@ function verifyRazorpayPayment($paymentId, $orderId, $signature) {
 
 // Email function (basic implementation)
 function sendBookingConfirmation($bookingId) {
-    $db = getDB();
-    $stmt = $db->prepare("
-        SELECT b.*, t.name as therapist_name 
-        FROM bookings b 
-        LEFT JOIN therapists t ON b.therapist_id = t.id 
-        WHERE b.id = ?
-    ");
-    $stmt->execute([$bookingId]);
-    $booking = $stmt->fetch();
-    
-    if ($booking) {
-        $subject = "Spa Booking Confirmation - Booking #" . $bookingId;
-        $message = "Dear {$booking['full_name']},\n\n";
-        $message .= "Your spa appointment has been confirmed!\n\n";
-        $message .= "Details:\n";
-        $message .= "Therapist: {$booking['therapist_name']}\n";
-        $message .= "Date: {$booking['booking_date']}\n";
-        $message .= "Time: {$booking['booking_time']}\n";
-        $message .= "Location: {$booking['user_location']}\n";
-        $message .= "Base Amount: ₹{$booking['base_amount']}\n";
-        if ($booking['night_fee'] > 0) {
-            $message .= "Night Fee: ₹{$booking['night_fee']}\n";
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("
+            SELECT b.*, t.name as therapist_name 
+            FROM bookings b 
+            LEFT JOIN therapists t ON b.therapist_id = t.id 
+            WHERE b.id = ?
+        ");
+        $stmt->execute([$bookingId]);
+        $booking = $stmt->fetch();
+        
+        if ($booking) {
+            $subject = "Spa Booking Confirmation - Booking #" . $bookingId;
+            $message = "Dear {$booking['full_name']},\n\n";
+            $message .= "Your spa appointment has been confirmed!\n\n";
+            $message .= "Details:\n";
+            $message .= "Therapist: {$booking['therapist_name']}\n";
+            $message .= "Date: {$booking['booking_date']}\n";
+            $message .= "Time: {$booking['booking_time']}\n";
+            $message .= "Location: {$booking['user_location']}\n";
+            $message .= "Base Amount: ₹{$booking['base_amount']}\n";
+            if ($booking['night_fee'] > 0) {
+                $message .= "Night Fee: ₹{$booking['night_fee']}\n";
+            }
+            $message .= "Total Amount: ₹{$booking['total_amount']}\n\n";
+            $message .= "Thank you for choosing our spa!\n";
+            
+            $headers = "From: noreply@spa.com\r\n";
+            $headers .= "Reply-To: info@spa.com\r\n";
+            
+            return mail($booking['email'], $subject, $message, $headers);
         }
-        $message .= "Total Amount: ₹{$booking['total_amount']}\n\n";
-        $message .= "Thank you for choosing our spa!\n";
-        
-        $headers = "From: noreply@spa.com\r\n";
-        $headers .= "Reply-To: info@spa.com\r\n";
-        
-        return mail($booking['email'], $subject, $message, $headers);
+    } catch (Exception $e) {
+        error_log("Error in sendBookingConfirmation: " . $e->getMessage());
     }
     
     return false;
@@ -672,183 +706,217 @@ function timeAgo($datetime) {
 
 // Initialize database tables if they don't exist
 function initializeDatabase() {
-    $db = getDB();
-    
-    // Create tables if they don't exist
-    $tables = [
-        "CREATE TABLE IF NOT EXISTS admins (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            username VARCHAR(50) UNIQUE NOT NULL,
-            email VARCHAR(100) UNIQUE NOT NULL,
-            password VARCHAR(255) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )",
+    try {
+        $db = getDB();
         
-        "CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            email VARCHAR(100) NULL,
-            phone VARCHAR(20) NULL,
-            city VARCHAR(100),
-            password VARCHAR(255) NOT NULL,
-            role ENUM('user', 'admin') DEFAULT 'user',
-            status ENUM('active', 'inactive') DEFAULT 'active',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT check_email_or_phone CHECK (email IS NOT NULL OR phone IS NOT NULL)
-        )",
+        // Create tables if they don't exist
+        $tables = [
+            "CREATE TABLE IF NOT EXISTS admins (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )",
+            
+            "CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) NULL,
+                phone VARCHAR(20) NULL,
+                city VARCHAR(100),
+                password VARCHAR(255) NOT NULL,
+                role ENUM('user', 'admin') DEFAULT 'user',
+                status ENUM('active', 'inactive') DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )",
+            
+            "CREATE TABLE IF NOT EXISTS services (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                description TEXT,
+                icon_type ENUM('bootstrap', 'upload') DEFAULT 'bootstrap',
+                icon_value VARCHAR(100),
+                icon_image VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )",
+            
+            "CREATE TABLE IF NOT EXISTS therapists (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                price_per_session DECIMAL(10,2) NOT NULL DEFAULT 0,
+                in_city_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+                out_city_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+                night_fee_enabled BOOLEAN DEFAULT TRUE,
+                height VARCHAR(20),
+                weight VARCHAR(20),
+                description TEXT,
+                availability_slots TEXT,
+                status ENUM('active', 'inactive') DEFAULT 'active',
+                main_image VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )",
+            
+            "CREATE TABLE IF NOT EXISTS therapist_images (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                therapist_id INT NOT NULL,
+                image_path VARCHAR(255) NOT NULL,
+                is_main BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (therapist_id) REFERENCES therapists(id) ON DELETE CASCADE
+            )",
+            
+            "CREATE TABLE IF NOT EXISTS therapist_services (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                therapist_id INT NOT NULL,
+                service_id INT NOT NULL,
+                FOREIGN KEY (therapist_id) REFERENCES therapists(id) ON DELETE CASCADE,
+                FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_therapist_service (therapist_id, service_id)
+            )",
+            
+            "CREATE TABLE IF NOT EXISTS bookings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                therapist_id INT NOT NULL,
+                full_name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) NOT NULL,
+                phone VARCHAR(20) NOT NULL,
+                booking_date DATE NOT NULL,
+                booking_time TIME NOT NULL,
+                message TEXT,
+                total_amount DECIMAL(10,2) NOT NULL,
+                base_amount DECIMAL(10,2) DEFAULT 0,
+                night_fee DECIMAL(10,2) DEFAULT 0,
+                user_location VARCHAR(100) DEFAULT 'Delhi',
+                is_night_booking BOOLEAN DEFAULT FALSE,
+                payment_id VARCHAR(255),
+                payment_status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
+                status ENUM('pending', 'confirmed', 'cancelled', 'completed') DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (therapist_id) REFERENCES therapists(id) ON DELETE CASCADE
+            )",
+            
+            "CREATE TABLE IF NOT EXISTS leads (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                type ENUM('inquiry', 'booking', 'whatsapp', 'contact') NOT NULL,
+                therapist_id INT NULL,
+                full_name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) NOT NULL,
+                phone VARCHAR(20) NOT NULL,
+                message TEXT,
+                status ENUM('new', 'follow_up', 'converted', 'closed') DEFAULT 'new',
+                admin_notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (therapist_id) REFERENCES therapists(id) ON DELETE SET NULL
+            )",
+            
+            "CREATE TABLE IF NOT EXISTS contact_inquiries (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) NOT NULL,
+                phone VARCHAR(20),
+                subject VARCHAR(200),
+                message TEXT NOT NULL,
+                status ENUM('new', 'replied', 'closed') DEFAULT 'new',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )"
+        ];
         
-        "CREATE TABLE IF NOT EXISTS services (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            description TEXT,
-            icon_type ENUM('bootstrap', 'upload') DEFAULT 'bootstrap',
-            icon_value VARCHAR(100),
-            icon_image VARCHAR(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )",
-        
-        "CREATE TABLE IF NOT EXISTS therapists (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            price_per_session DECIMAL(10,2) NOT NULL DEFAULT 0,
-            in_city_price DECIMAL(10,2) NOT NULL DEFAULT 0,
-            out_city_price DECIMAL(10,2) NOT NULL DEFAULT 0,
-            night_fee_enabled BOOLEAN DEFAULT TRUE,
-            height VARCHAR(20),
-            weight VARCHAR(20),
-            description TEXT,
-            availability_slots TEXT,
-            status ENUM('active', 'inactive') DEFAULT 'active',
-            main_image VARCHAR(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )",
-        
-        "CREATE TABLE IF NOT EXISTS therapist_images (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            therapist_id INT NOT NULL,
-            image_path VARCHAR(255) NOT NULL,
-            is_main BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (therapist_id) REFERENCES therapists(id) ON DELETE CASCADE
-        )",
-        
-        "CREATE TABLE IF NOT EXISTS therapist_services (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            therapist_id INT NOT NULL,
-            service_id INT NOT NULL,
-            FOREIGN KEY (therapist_id) REFERENCES therapists(id) ON DELETE CASCADE,
-            FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_therapist_service (therapist_id, service_id)
-        )",
-        
-        "CREATE TABLE IF NOT EXISTS bookings (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            therapist_id INT NOT NULL,
-            full_name VARCHAR(100) NOT NULL,
-            email VARCHAR(100) NOT NULL,
-            phone VARCHAR(20) NOT NULL,
-            booking_date DATE NOT NULL,
-            booking_time TIME NOT NULL,
-            message TEXT,
-            total_amount DECIMAL(10,2) NOT NULL,
-            base_amount DECIMAL(10,2) DEFAULT 0,
-            night_fee DECIMAL(10,2) DEFAULT 0,
-            user_location VARCHAR(100) DEFAULT 'Delhi',
-            is_night_booking BOOLEAN DEFAULT FALSE,
-            payment_id VARCHAR(255),
-            payment_status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
-            status ENUM('pending', 'confirmed', 'cancelled', 'completed') DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (therapist_id) REFERENCES therapists(id) ON DELETE CASCADE
-        )",
-        
-        "CREATE TABLE IF NOT EXISTS leads (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            type ENUM('inquiry', 'booking', 'whatsapp', 'contact') NOT NULL,
-            therapist_id INT NULL,
-            full_name VARCHAR(100) NOT NULL,
-            email VARCHAR(100) NOT NULL,
-            phone VARCHAR(20) NOT NULL,
-            message TEXT,
-            status ENUM('new', 'follow_up', 'converted', 'closed') DEFAULT 'new',
-            admin_notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (therapist_id) REFERENCES therapists(id) ON DELETE SET NULL
-        )",
-        
-        "CREATE TABLE IF NOT EXISTS contact_inquiries (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            email VARCHAR(100) NOT NULL,
-            phone VARCHAR(20),
-            subject VARCHAR(200),
-            message TEXT NOT NULL,
-            status ENUM('new', 'replied', 'closed') DEFAULT 'new',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )"
-    ];
-    
-    foreach ($tables as $sql) {
-        try {
-            $db->prepare($sql)->execute();
-        } catch (Exception $e) {
-            // Continue if table already exists
+        foreach ($tables as $sql) {
+            try {
+                $db->prepare($sql)->execute();
+            } catch (Exception $e) {
+                error_log("Error creating table: " . $e->getMessage());
+                // Continue if table already exists
+            }
         }
+        
+        // Insert default data
+        insertDefaultData();
+    } catch (Exception $e) {
+        error_log("Error in initializeDatabase: " . $e->getMessage());
     }
-    
-    // Insert default data
-    insertDefaultData();
 }
 
 function insertDefaultData() {
-    $db = getDB();
-    
-    // Insert default admin
     try {
-        $stmt = $db->prepare("SELECT COUNT(*) as count FROM admins");
-        $stmt->execute();
-        if ($stmt->fetch()['count'] == 0) {
-            createDefaultAdmin();
-        }
-    } catch (Exception $e) {}
-    
-    // Insert default services
-    try {
-        $stmt = $db->prepare("SELECT COUNT(*) as count FROM services");
-        $stmt->execute();
-        if ($stmt->fetch()['count'] == 0) {
-            $services = [
-                ['Swedish Massage', 'Relaxing full-body massage with gentle pressure', 'bootstrap', 'bi-heart-pulse', null],
-                ['Deep Tissue Massage', 'Therapeutic massage targeting deep muscle layers', 'bootstrap', 'bi-activity', null],
-                ['Hot Stone Therapy', 'Heated stones placed on body for deep relaxation', 'bootstrap', 'bi-fire', null],
-                ['Aromatherapy', 'Essential oils massage for mind and body wellness', 'bootstrap', 'bi-flower1', null],
-                ['Reflexology', 'Pressure point massage focusing on feet and hands', 'bootstrap', 'bi-hand-thumbs-up', null],
-                ['Thai Massage', 'Traditional stretching and pressure point therapy', 'bootstrap', 'bi-person-arms-up', null]
-            ];
-            
-            $stmt = $db->prepare("INSERT INTO services (name, description, icon_type, icon_value, icon_image) VALUES (?, ?, ?, ?, ?)");
-            foreach ($services as $service) {
-                $stmt->execute($service);
+        $db = getDB();
+        
+        // Insert default admin
+        try {
+            $stmt = $db->prepare("SELECT COUNT(*) as count FROM admins");
+            $stmt->execute();
+            if ($stmt->fetch()['count'] == 0) {
+                createDefaultAdmin();
             }
+        } catch (Exception $e) {
+            error_log("Error checking/creating admin: " . $e->getMessage());
         }
-    } catch (Exception $e) {}
-    
-    // Create default users for testing
-    try {
-        $stmt = $db->prepare("SELECT COUNT(*) as count FROM users");
-        $stmt->execute();
-        if ($stmt->fetch()['count'] == 0) {
-            $users = [
-                ['Admin User', 'admin@spa.com', '9560656913', 'Delhi', password_hash('admin123', PASSWORD_DEFAULT), 'admin'],
-                ['Test User', 'user@spa.com', '9560656913', 'Mumbai', password_hash('user123', PASSWORD_DEFAULT), 'user']
-            ];
-            
-            $stmt = $db->prepare("INSERT INTO users (name, email, phone, city, password, role) VALUES (?, ?, ?, ?, ?, ?)");
-            foreach ($users as $user) {
-                $stmt->execute($user);
+        
+        // Insert default services
+        try {
+            $stmt = $db->prepare("SELECT COUNT(*) as count FROM services");
+            $stmt->execute();
+            if ($stmt->fetch()['count'] == 0) {
+                $services = [
+                    ['Swedish Massage', 'Relaxing full-body massage with gentle pressure', 'bootstrap', 'bi-heart-pulse', null],
+                    ['Deep Tissue Massage', 'Therapeutic massage targeting deep muscle layers', 'bootstrap', 'bi-activity', null],
+                    ['Hot Stone Therapy', 'Heated stones placed on body for deep relaxation', 'bootstrap', 'bi-fire', null],
+                    ['Aromatherapy', 'Essential oils massage for mind and body wellness', 'bootstrap', 'bi-flower1', null],
+                    ['Reflexology', 'Pressure point massage focusing on feet and hands', 'bootstrap', 'bi-hand-thumbs-up', null],
+                    ['Thai Massage', 'Traditional stretching and pressure point therapy', 'bootstrap', 'bi-person-arms-up', null]
+                ];
+                
+                $stmt = $db->prepare("INSERT INTO services (name, description, icon_type, icon_value, icon_image) VALUES (?, ?, ?, ?, ?)");
+                foreach ($services as $service) {
+                    $stmt->execute($service);
+                }
             }
+        } catch (Exception $e) {
+            error_log("Error creating services: " . $e->getMessage());
         }
-    } catch (Exception $e) {}
+        
+        // Create default users for testing
+        try {
+            $stmt = $db->prepare("SELECT COUNT(*) as count FROM users");
+            $stmt->execute();
+            if ($stmt->fetch()['count'] == 0) {
+                $users = [
+                    ['Admin User', 'admin@spa.com', '9560656913', 'Delhi', password_hash('admin123', PASSWORD_DEFAULT), 'admin'],
+                    ['Test User', 'user@spa.com', '9560656913', 'Mumbai', password_hash('user123', PASSWORD_DEFAULT), 'user']
+                ];
+                
+                $stmt = $db->prepare("INSERT INTO users (name, email, phone, city, password, role) VALUES (?, ?, ?, ?, ?, ?)");
+                foreach ($users as $user) {
+                    $stmt->execute($user);
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Error creating users: " . $e->getMessage());
+        }
+        
+        // Create sample therapists with pricing
+        try {
+            $stmt = $db->prepare("SELECT COUNT(*) as count FROM therapists");
+            $stmt->execute();
+            if ($stmt->fetch()['count'] == 0) {
+                $therapists = [
+                    ['Raj Kumar', 2500, 2500, 3000, 1, '5\'8"', '70kg', 'Expert in Swedish and deep tissue massage with 8+ years experience.', 'Mon-Fri: 9 AM - 6 PM, Sat: 10 AM - 4 PM'],
+                    ['Amit Singh', 3000, 3000, 3500, 1, '5\'10"', '75kg', 'Specialized in aromatherapy and hot stone treatments.', 'Mon-Sun: 10 AM - 8 PM'],
+                    ['Vikash Sharma', 2800, 2800, 3300, 1, '5\'9"', '72kg', 'Traditional Thai massage and reflexology specialist.', 'Tue-Sun: 11 AM - 7 PM']
+                ];
+                
+                $stmt = $db->prepare("INSERT INTO therapists (name, price_per_session, in_city_price, out_city_price, night_fee_enabled, height, weight, description, availability_slots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                foreach ($therapists as $therapist) {
+                    $stmt->execute($therapist);
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Error creating therapists: " . $e->getMessage());
+        }
+    } catch (Exception $e) {
+        error_log("Error in insertDefaultData: " . $e->getMessage());
+    }
 }
 ?>

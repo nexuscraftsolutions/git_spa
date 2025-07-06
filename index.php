@@ -4,11 +4,23 @@ require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
 // Initialize database and default data
-initializeDatabase();
+try {
+    initializeDatabase();
+} catch (Exception $e) {
+    error_log("Database initialization error: " . $e->getMessage());
+}
 
 $pageTitle = 'Home';
-$therapists = getAllTherapists();
-$services = getAllServices();
+
+// Get data with error handling
+try {
+    $therapists = getAllTherapists();
+    $services = getAllServices();
+} catch (Exception $e) {
+    error_log("Error fetching data: " . $e->getMessage());
+    $therapists = [];
+    $services = [];
+}
 
 // Get user's location for pricing
 $userLocation = $_SESSION['user_city'] ?? detectUserLocation()['city'];
@@ -23,32 +35,6 @@ $userLocation = $_SESSION['user_city'] ?? detectUserLocation()['city'];
             <div class="col-lg-6 hero-content">
                 <h1 class="display-4 fw-bold mb-4 fade-in">Welcome to Hammam Spa</h1>
                 <p class="lead mb-4 fade-in">Experience ultimate relaxation with our professional therapists and premium spa services. Rejuvenate your mind, body, and soul in our tranquil sanctuary.</p>
-                
-                <!-- Pricing Toggle Buttons -->
-                <div class="pricing-toggle mb-4 fade-in">
-                    <div class="btn-group" role="group" aria-label="Pricing options">
-                        <input type="radio" class="btn-check" name="pricingType" id="inCityPricing" value="in_city" checked>
-                        <label class="btn btn-outline-light" for="inCityPricing">
-                            <i class="bi bi-building me-2"></i>In-City Pricing
-                        </label>
-                        
-                        <input type="radio" class="btn-check" name="pricingType" id="outCityPricing" value="out_city">
-                        <label class="btn btn-outline-light" for="outCityPricing">
-                            <i class="bi bi-geo-alt me-2"></i>Out-City Pricing
-                        </label>
-                    </div>
-                    <div class="mt-2">
-                        <small class="text-light opacity-75">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Your location: <strong><?php echo htmlspecialchars($userLocation); ?></strong>
-                            <?php if (isInCityLocation($userLocation)): ?>
-                                (In-City rates apply)
-                            <?php else: ?>
-                                (Out-City rates apply)
-                            <?php endif; ?>
-                        </small>
-                    </div>
-                </div>
                 
                 <div class="d-flex gap-3 fade-in">
                     <a href="models.php" class="btn btn-light btn-lg">
@@ -311,43 +297,4 @@ $userLocation = $_SESSION['user_city'] ?? detectUserLocation()['city'];
 
 <?php include 'includes/booking_modal.php'; ?>
 
-<?php 
-$extraScripts = '<script>
-    // Pricing toggle functionality
-    document.querySelectorAll("input[name=\"pricingType\"]").forEach(radio => {
-        radio.addEventListener("change", function() {
-            const priceType = this.value;
-            
-            // Update all dynamic prices
-            document.querySelectorAll(".dynamic-price").forEach(priceElement => {
-                const inCityPrice = parseFloat(priceElement.dataset.inCity);
-                const outCityPrice = parseFloat(priceElement.dataset.outCity);
-                const price = priceType === "in_city" ? inCityPrice : outCityPrice;
-                
-                priceElement.textContent = "₹" + new Intl.NumberFormat("en-IN").format(price);
-            });
-            
-            // Store preference in localStorage
-            localStorage.setItem("preferredPricingType", priceType);
-        });
-    });
-    
-    // Load saved pricing preference
-    document.addEventListener("DOMContentLoaded", function() {
-        const savedPricingType = localStorage.getItem("preferredPricingType");
-        if (savedPricingType) {
-            const radio = document.getElementById(savedPricingType === "in_city" ? "inCityPricing" : "outCityPricing");
-            if (radio) {
-                radio.checked = true;
-                radio.dispatchEvent(new Event("change"));
-            }
-        }
-    });
-    
-    // Set user location for pricing calculations
-    window.userLocation = "<?php echo htmlspecialchars($userLocation); ?>";
-    window.isInCity = <?php echo isInCityLocation($userLocation) ? 'true' : 'false'; ?>;
-</script>';
-
-include 'includes/footer.php'; 
-?>
+<?php include 'includes/footer.php'; ?>

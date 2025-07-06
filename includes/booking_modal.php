@@ -71,20 +71,27 @@
                                         <label class="form-label">Preferred Time</label>
                                         <select class="form-control" name="preferred_time">
                                             <option value="">Select time</option>
-                                            <option value="09:00">9:00 AM</option>
-                                            <option value="10:00">10:00 AM</option>
-                                            <option value="11:00">11:00 AM</option>
-                                            <option value="12:00">12:00 PM</option>
-                                            <option value="14:00">2:00 PM</option>
-                                            <option value="15:00">3:00 PM</option>
-                                            <option value="16:00">4:00 PM</option>
-                                            <option value="17:00">5:00 PM</option>
-                                            <option value="18:00">6:00 PM</option>
-                                            <option value="22:00">10:00 PM (Night)</option>
-                                            <option value="23:00">11:00 PM (Night)</option>
-                                            <option value="00:00">12:00 AM (Night)</option>
-                                            <option value="01:00">1:00 AM (Night)</option>
-                                            <option value="02:00">2:00 AM (Night)</option>
+                                            <option value="09:00">09:00 (9:00 AM)</option>
+                                            <option value="10:00">10:00 (10:00 AM)</option>
+                                            <option value="11:00">11:00 (11:00 AM)</option>
+                                            <option value="12:00">12:00 (12:00 PM)</option>
+                                            <option value="13:00">13:00 (1:00 PM)</option>
+                                            <option value="14:00">14:00 (2:00 PM)</option>
+                                            <option value="15:00">15:00 (3:00 PM)</option>
+                                            <option value="16:00">16:00 (4:00 PM)</option>
+                                            <option value="17:00">17:00 (5:00 PM)</option>
+                                            <option value="18:00">18:00 (6:00 PM)</option>
+                                            <option value="19:00">19:00 (7:00 PM)</option>
+                                            <option value="20:00">20:00 (8:00 PM)</option>
+                                            <option value="21:00">21:00 (9:00 PM)</option>
+                                            <option value="22:00">22:00 (10:00 PM) - Night Fee</option>
+                                            <option value="23:00">23:00 (11:00 PM) - Night Fee</option>
+                                            <option value="00:00">00:00 (12:00 AM) - Night Fee</option>
+                                            <option value="01:00">01:00 (1:00 AM) - Night Fee</option>
+                                            <option value="02:00">02:00 (2:00 AM) - Night Fee</option>
+                                            <option value="03:00">03:00 (3:00 AM) - Night Fee</option>
+                                            <option value="04:00">04:00 (4:00 AM) - Night Fee</option>
+                                            <option value="05:00">05:00 (5:00 AM) - Night Fee</option>
                                         </select>
                                     </div>
                                     <div class="col-12">
@@ -107,6 +114,24 @@
                                 <div class="booking-header mb-4">
                                     <h6 class="fw-bold text-success">Book & Pay Online</h6>
                                     <p class="text-muted mb-0">Secure online booking with instant confirmation.</p>
+                                </div>
+                                
+                                <!-- Price Toggle for Booking -->
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h6 class="mb-3">Select Pricing Type</h6>
+                                        <div class="btn-group w-100" role="group" aria-label="Booking pricing options">
+                                            <input type="radio" class="btn-check" name="bookingPricingType" id="bookingInCity" value="in_city" checked>
+                                            <label class="btn btn-outline-primary" for="bookingInCity">
+                                                <i class="bi bi-building me-2"></i>In-City
+                                            </label>
+                                            
+                                            <input type="radio" class="btn-check" name="bookingPricingType" id="bookingOutCity" value="out_city">
+                                            <label class="btn btn-outline-primary" for="bookingOutCity">
+                                                <i class="bi bi-geo-alt me-2"></i>Out-City
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <form id="bookingForm" class="needs-validation" novalidate>
@@ -132,34 +157,34 @@
                                                    value="<?php echo htmlspecialchars($_SESSION['user_phone'] ?? ''); ?>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Your Location *</label>
-                                            <input type="text" class="form-control" name="location_input" id="locationInput"
-                                                   value="<?php echo htmlspecialchars($_SESSION['user_city'] ?? 'Delhi'); ?>" 
-                                                   onchange="updatePricing()" required>
-                                            <small class="form-text text-muted">This affects pricing calculation</small>
-                                        </div>
-                                        <div class="col-md-6">
                                             <label class="form-label">Booking Date *</label>
                                             <input type="date" class="form-control" name="booking_date" min="<?php echo date('Y-m-d'); ?>" required>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Preferred Time *</label>
-                                            <select class="form-control" name="booking_time" id="bookingTimeSelect" onchange="updatePricing()" required>
+                                            <select class="form-control" name="booking_time" id="bookingTimeSelect" onchange="updateBookingPricing()" required>
                                                 <option value="">Select time</option>
-                                                <option value="09:00">9:00 AM</option>
-                                                <option value="10:00">10:00 AM</option>
-                                                <option value="11:00">11:00 AM</option>
-                                                <option value="12:00">12:00 PM</option>
-                                                <option value="14:00">2:00 PM</option>
-                                                <option value="15:00">3:00 PM</option>
-                                                <option value="16:00">4:00 PM</option>
-                                                <option value="17:00">5:00 PM</option>
-                                                <option value="18:00">6:00 PM</option>
-                                                <option value="22:00">10:00 PM (Night +₹1500)</option>
-                                                <option value="23:00">11:00 PM (Night +₹1500)</option>
-                                                <option value="00:00">12:00 AM (Night +₹1500)</option>
-                                                <option value="01:00">1:00 AM (Night +₹1500)</option>
-                                                <option value="02:00">2:00 AM (Night +₹1500)</option>
+                                                <option value="09:00">09:00 (9:00 AM)</option>
+                                                <option value="10:00">10:00 (10:00 AM)</option>
+                                                <option value="11:00">11:00 (11:00 AM)</option>
+                                                <option value="12:00">12:00 (12:00 PM)</option>
+                                                <option value="13:00">13:00 (1:00 PM)</option>
+                                                <option value="14:00">14:00 (2:00 PM)</option>
+                                                <option value="15:00">15:00 (3:00 PM)</option>
+                                                <option value="16:00">16:00 (4:00 PM)</option>
+                                                <option value="17:00">17:00 (5:00 PM)</option>
+                                                <option value="18:00">18:00 (6:00 PM)</option>
+                                                <option value="19:00">19:00 (7:00 PM)</option>
+                                                <option value="20:00">20:00 (8:00 PM)</option>
+                                                <option value="21:00">21:00 (9:00 PM)</option>
+                                                <option value="22:00">22:00 (10:00 PM)</option>
+                                                <option value="23:00">23:00 (11:00 PM)</option>
+                                                <option value="00:00">00:00 (12:00 AM)</option>
+                                                <option value="01:00">01:00 (1:00 AM)</option>
+                                                <option value="02:00">02:00 (2:00 AM)</option>
+                                                <option value="03:00">03:00 (3:00 AM)</option>
+                                                <option value="04:00">04:00 (4:00 AM)</option>
+                                                <option value="05:00">05:00 (5:00 AM)</option>
                                             </select>
                                         </div>
                                         <div class="col-12">
@@ -198,7 +223,7 @@
                                                 <div class="mt-2">
                                                     <small class="text-muted" id="pricingInfo">
                                                         <i class="bi bi-info-circle me-1"></i>
-                                                        Pricing will be calculated based on your location and time
+                                                        Select time and pricing type to see total amount
                                                     </small>
                                                 </div>
                                             </div>
@@ -282,51 +307,50 @@
 <script>
 // Global variables for pricing
 let currentTherapistId = null;
+let currentTherapistData = null;
 
-// Function to update pricing based on location and time
-function updatePricing() {
-    if (!currentTherapistId) return;
+// Function to check if time is night time (22:00 to 06:00)
+function isNightTime(time) {
+    if (!time) return false;
+    const hour = parseInt(time.split(':')[0]);
+    return hour >= 22 || hour < 6;
+}
+
+// Function to update booking pricing based on location and time
+function updateBookingPricing() {
+    if (!currentTherapistData) return;
     
-    const location = document.getElementById('locationInput')?.value || 'Delhi';
+    const pricingType = document.querySelector('input[name="bookingPricingType"]:checked')?.value || 'in_city';
     const time = document.getElementById('bookingTimeSelect')?.value;
     
-    if (!time) {
-        // Reset pricing display
-        document.getElementById('baseAmountDisplay').textContent = '₹0';
-        document.getElementById('nightFeeDisplay').textContent = '₹0';
-        document.getElementById('displayAmount').textContent = '₹0';
-        document.getElementById('pricingInfo').innerHTML = '<i class="bi bi-info-circle me-1"></i>Please select a time to see pricing';
-        return;
-    }
+    // Get base price based on pricing type
+    const basePrice = pricingType === 'in_city' ? 
+        parseFloat(currentTherapistData.in_city_price) : 
+        parseFloat(currentTherapistData.out_city_price);
     
-    // Update user location in hidden field
-    document.getElementById('bookingUserLocation').value = location;
+    // Calculate night fee
+    const nightFee = (time && isNightTime(time) && currentTherapistData.night_fee_enabled) ? 1500 : 0;
+    const totalPrice = basePrice + nightFee;
     
-    // Fetch pricing from server
-    fetch(`get_therapist_pricing.php?id=${currentTherapistId}&location=${encodeURIComponent(location)}&time=${time}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const pricing = data.pricing;
-                
-                document.getElementById('baseAmountDisplay').textContent = '₹' + new Intl.NumberFormat('en-IN').format(pricing.base_price);
-                document.getElementById('nightFeeDisplay').textContent = '₹' + new Intl.NumberFormat('en-IN').format(pricing.night_fee);
-                document.getElementById('displayAmount').textContent = '₹' + new Intl.NumberFormat('en-IN').format(pricing.total_price);
-                document.getElementById('bookingAmount').value = pricing.total_price;
-                
-                // Update pricing info
-                const locationText = pricing.is_in_city ? 'In-City' : 'Out-City';
-                const nightText = pricing.is_night_booking ? ' + Night Fee' : '';
-                document.getElementById('pricingInfo').innerHTML = 
-                    `<i class="bi bi-info-circle me-1"></i>${locationText} pricing${nightText}`;
-            } else {
-                console.error('Pricing calculation failed:', data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching pricing:', error);
-        });
+    // Update display
+    document.getElementById('baseAmountDisplay').textContent = '₹' + new Intl.NumberFormat('en-IN').format(basePrice);
+    document.getElementById('nightFeeDisplay').textContent = '₹' + new Intl.NumberFormat('en-IN').format(nightFee);
+    document.getElementById('displayAmount').textContent = '₹' + new Intl.NumberFormat('en-IN').format(totalPrice);
+    document.getElementById('bookingAmount').value = totalPrice;
+    
+    // Update pricing info
+    const locationText = pricingType === 'in_city' ? 'In-City' : 'Out-City';
+    const nightText = nightFee > 0 ? ' + Night Fee (₹1500)' : '';
+    document.getElementById('pricingInfo').innerHTML = 
+        `<i class="bi bi-info-circle me-1"></i>${locationText} pricing${nightText}`;
 }
+
+// Add event listeners for booking pricing toggles
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[name="bookingPricingType"]').forEach(radio => {
+        radio.addEventListener('change', updateBookingPricing);
+    });
+});
 
 // Function to open booking modal with therapist data
 function openBookingModal(therapistId) {
@@ -339,14 +363,13 @@ function openBookingModal(therapistId) {
     if (inquiryTherapistId) inquiryTherapistId.value = therapistId;
     if (bookingTherapistId) bookingTherapistId.value = therapistId;
     
-    // Reset pricing display
-    updatePricing();
-    
-    // Fetch therapist details for WhatsApp buttons
+    // Fetch therapist details
     fetch(`get_therapist_details.php?id=${therapistId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                currentTherapistData = data.therapist;
+                updateBookingPricing();
                 updateWhatsAppButtons(data.therapist);
             }
         })

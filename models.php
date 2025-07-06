@@ -4,7 +4,14 @@ require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
 $pageTitle = 'Our Therapists';
-$therapists = getAllTherapists();
+
+// Get data with error handling
+try {
+    $therapists = getAllTherapists();
+} catch (Exception $e) {
+    error_log("Error fetching therapists: " . $e->getMessage());
+    $therapists = [];
+}
 ?>
 
 <?php include 'includes/header.php'; ?>
@@ -22,6 +29,38 @@ $therapists = getAllTherapists();
                     <div class="stat-item">
                         <span class="stat-number"><?php echo count($therapists); ?>+</span>
                         <span class="stat-label">Expert Therapists</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Price Toggle Section -->
+<section class="py-3 bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6 class="mb-3">Select Pricing Type</h6>
+                        <div class="btn-group w-100" role="group" aria-label="Pricing options">
+                            <input type="radio" class="btn-check" name="pricingType" id="inCityPricing" value="in_city" checked>
+                            <label class="btn btn-outline-primary" for="inCityPricing">
+                                <i class="bi bi-building me-2"></i>In-City Pricing
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="pricingType" id="outCityPricing" value="out_city">
+                            <label class="btn btn-outline-primary" for="outCityPricing">
+                                <i class="bi bi-geo-alt me-2"></i>Out-City Pricing
+                            </label>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                In-City: Delhi & nearby areas | Out-City: Outside Delhi
+                            </small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -90,7 +129,14 @@ $therapists = getAllTherapists();
                                 <h5 class="therapist-name"><?php echo htmlspecialchars($therapist['name']); ?></h5>
                                 
                                 <div class="price-display">
-                                    <?php echo formatPrice($therapist['price_per_session']); ?>/session
+                                    <span class="dynamic-price" 
+                                          data-in-city="<?php echo $therapist['in_city_price']; ?>"
+                                          data-out-city="<?php echo $therapist['out_city_price']; ?>">
+                                        <?php echo formatPrice($therapist['in_city_price']); ?>
+                                    </span>/session
+                                    <?php if ($therapist['night_fee_enabled']): ?>
+                                        <br><small class="text-muted">+₹1500 night fee (10 PM - 6 AM)</small>
+                                    <?php endif; ?>
                                 </div>
                                 
                                 <div class="services-tags">
@@ -125,4 +171,40 @@ $therapists = getAllTherapists();
 </section>
 
 <?php include 'includes/booking_modal.php'; ?>
-<?php include 'includes/footer.php'; ?>
+
+<?php 
+$extraScripts = '<script>
+    // Pricing toggle functionality
+    document.querySelectorAll("input[name=\"pricingType\"]").forEach(radio => {
+        radio.addEventListener("change", function() {
+            const priceType = this.value;
+            
+            // Update all dynamic prices
+            document.querySelectorAll(".dynamic-price").forEach(priceElement => {
+                const inCityPrice = parseFloat(priceElement.dataset.inCity);
+                const outCityPrice = parseFloat(priceElement.dataset.outCity);
+                const price = priceType === "in_city" ? inCityPrice : outCityPrice;
+                
+                priceElement.textContent = "₹" + new Intl.NumberFormat("en-IN").format(price);
+            });
+            
+            // Store preference in localStorage
+            localStorage.setItem("preferredPricingType", priceType);
+        });
+    });
+    
+    // Load saved pricing preference
+    document.addEventListener("DOMContentLoaded", function() {
+        const savedPricingType = localStorage.getItem("preferredPricingType");
+        if (savedPricingType) {
+            const radio = document.getElementById(savedPricingType === "in_city" ? "inCityPricing" : "outCityPricing");
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event("change"));
+            }
+        }
+    });
+</script>';
+
+include 'includes/footer.php'; 
+?>
