@@ -83,7 +83,7 @@
                                 <?php echo strtoupper(substr($_SESSION['user_name'], 0, 1)); ?>
                             </div>
                             <div class="dropdown">
-                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                                <button class="btn btn-link nav-link dropdown-toggle d-flex align-items-center text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <div class="text-start">
                                         <div class="fw-semibold">Hi, <?php echo htmlspecialchars(explode(' ', $_SESSION['user_name'])[0]); ?></div>
                                         <?php if (!empty($_SESSION['user_city'])): ?>
@@ -92,7 +92,7 @@
                                             </small>
                                         <?php endif; ?>
                                     </div>
-                                </a>
+                                </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li><a class="dropdown-item" href="profile.php">
                                         <i class="bi bi-person me-2"></i>Profile

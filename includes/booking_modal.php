@@ -58,12 +58,6 @@
                                         <div class="invalid-feedback">Please provide a valid phone number.</div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Your Location</label>
-                                        <input type="text" class="form-control" name="user_location" 
-                                               value="<?php echo htmlspecialchars($_SESSION['user_city'] ?? ''); ?>" 
-                                               placeholder="City name">
-                                    </div>
-                                    <div class="col-md-6">
                                         <label class="form-label">Preferred Date</label>
                                         <input type="date" class="form-control" name="preferred_date" min="<?php echo date('Y-m-d'); ?>">
                                     </div>
@@ -145,7 +139,7 @@
                                     <input type="hidden" name="therapist_id" id="bookingTherapistId">
                                     <input type="hidden" name="total_amount" id="bookingAmount">
                                     <input type="hidden" name="pricing_type" id="bookingPricingType">
-                                    <input type="hidden" name="user_location" id="bookingUserLocation" value="<?php echo htmlspecialchars($_SESSION['user_city'] ?? 'Delhi'); ?>">
+                                    <input type="hidden" name="user_location" value="Based on pricing selection">
                                     
                                     <div class="row g-3">
                                         <div class="col-md-6">

@@ -40,6 +40,8 @@ $booking_date = sanitizeInput($_POST['booking_date']);
 $booking_time = sanitizeInput($_POST['booking_time']);
 $message = sanitizeInput($_POST['message'] ?? '');
 $total_amount = (float)$_POST['total_amount'];
+$pricing_type = sanitizeInput($_POST['pricing_type'] ?? 'in_city');
+$user_location = sanitizeInput($_POST['user_location'] ?? 'Delhi');
 
 // Validate email
 if (!validateEmail($email)) {
@@ -83,7 +85,7 @@ if ($existing['count'] > 0) {
 }
 
 try {
-    // Create booking
+    // Create booking with accurate pricing data
     $bookingData = [
         'therapist_id' => $therapist_id,
         'full_name' => $full_name,
@@ -92,7 +94,9 @@ try {
         'booking_date' => $booking_date,
         'booking_time' => $booking_time,
         'message' => $message,
-        'total_amount' => $total_amount
+        'total_amount' => $total_amount,
+        'pricing_type' => $pricing_type,
+        'user_location' => $user_location
     ];
     
     $result = createBooking($bookingData);

@@ -457,24 +457,37 @@ function createBooking($data) {
     $db = getDB();
     
     try {
-        // Calculate pricing
-        $pricingResult = calculateTherapistPrice(
-            $data['therapist_id'], 
-            $data['user_location'] ?? 'Delhi', 
-            $data['booking_time']
-        );
+        // Get therapist data for pricing calculation
+        $therapist = getTherapistById($data['therapist_id']);
+        if (!$therapist) {
+            return ['success' => false, 'message' => 'Therapist not found'];
+        }
         
-        if (!$pricingResult['success']) {
-            return ['success' => false, 'message' => 'Error calculating price'];
+        // Calculate pricing based on actual user selection
+        $pricingType = $data['pricing_type'] ?? 'in_city';
+        $basePrice = ($pricingType === 'in_city') ? 
+            $therapist['in_city_price'] : 
+            $therapist['out_city_price'];
+        
+        // Calculate night fee
+        $isNightBooking = isNightTime($data['booking_time']);
+        $nightFee = ($isNightBooking && $therapist['night_fee_enabled']) ? 1500 : 0;
+        
+        // Verify the total amount matches our calculation
+        $calculatedTotal = $basePrice + $nightFee;
+        if (abs($calculatedTotal - $data['total_amount']) > 0.01) {
+            // Log the discrepancy but use the calculated amount for security
+            error_log("Price mismatch: Expected {$calculatedTotal}, got {$data['total_amount']}");
+            $data['total_amount'] = $calculatedTotal;
         }
         
         $stmt = $db->prepare("
             INSERT INTO bookings (
                 therapist_id, full_name, email, phone, booking_date, booking_time, 
-                message, total_amount, base_amount, night_fee, user_location, 
-                is_night_booking, status
+                message, total_amount, base_amount, night_fee, user_location,
+                is_night_booking, pricing_type, status
             ) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
         ");
         
         $result = $stmt->execute([
@@ -485,11 +498,12 @@ function createBooking($data) {
             $data['booking_date'],
             $data['booking_time'],
             $data['message'],
-            $pricingResult['total_price'],
-            $pricingResult['base_price'],
-            $pricingResult['night_fee'],
+            $calculatedTotal,
+            $basePrice,
+            $nightFee,
             $data['user_location'] ?? 'Delhi',
-            $pricingResult['is_night_booking']
+            $isNightBooking,
+            $pricingType
         ]);
         
         if ($result) {
@@ -506,7 +520,16 @@ function createBooking($data) {
                 'status' => 'new'
             ]);
             
-            return ['success' => true, 'booking_id' => $bookingId, 'pricing' => $pricingResult];
+            return [
+                'success' => true, 
+                'booking_id' => $bookingId,
+                'pricing' => [
+                    'base_price' => $basePrice,
+                    'night_fee' => $nightFee,
+                    'total_price' => $calculatedTotal,
+                    'pricing_type' => $pricingType
+                ]
+            ];
         }
     } catch (Exception $e) {
         return ['success' => false, 'message' => $e->getMessage()];
@@ -794,6 +817,7 @@ function initializeDatabase() {
                 night_fee DECIMAL(10,2) DEFAULT 0,
                 user_location VARCHAR(100) DEFAULT 'Delhi',
                 is_night_booking BOOLEAN DEFAULT FALSE,
+                pricing_type ENUM('in_city', 'out_city') DEFAULT 'in_city',
                 payment_id VARCHAR(255),
                 payment_status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
                 status ENUM('pending', 'confirmed', 'cancelled', 'completed') DEFAULT 'pending',

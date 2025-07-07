@@ -79,15 +79,20 @@ try {
                 <div class="row">
                     <div class="col-md-4">
                         <div class="mb-2">
-                            <strong>Amount:</strong> <span class="text-success fw-bold">' . formatPrice($booking['total_amount']) . '</span>
+                            <strong>Total Amount:</strong> <span class="text-success fw-bold">' . formatPrice($booking['total_amount']) . '</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Base Amount:</strong> ' . formatPrice($booking['base_amount'] ?? 0) . '
+                        </div>
+                        ' . (($booking['night_fee'] ?? 0) > 0 ? '<div class="mb-2"><strong>Night Fee:</strong> ' . formatPrice($booking['night_fee']) . '</div>' : '') . '
+                        <div class="mb-2">
+                            <strong>Pricing Type:</strong> ' . ucfirst(str_replace('_', '-', $booking['pricing_type'] ?? 'in_city')) . '
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-8">
                         <div class="mb-2">
                             <strong>Payment Method:</strong> ' . $paymentMethod . '
                         </div>
-                    </div>
-                    <div class="col-md-4">
                         <div class="mb-2">
                             <strong>Payment Status:</strong> <span class="badge bg-' . 
                                 ($hasPaymentId ? 'success' : 'warning') . '">' . $paymentStatus . '</span>

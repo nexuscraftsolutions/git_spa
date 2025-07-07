@@ -55,6 +55,8 @@ $booking_date = sanitizeInput($_POST['booking_date']);
 $booking_time = sanitizeInput($_POST['booking_time']);
 $message = sanitizeInput($_POST['message'] ?? '');
 $total_amount = (float)$_POST['total_amount'];
+$pricing_type = sanitizeInput($_POST['pricing_type'] ?? 'in_city');
+$user_location = sanitizeInput($_POST['user_location'] ?? 'Based on pricing selection');
 
 // Validate email
 if (!validateEmail($email)) {
@@ -86,10 +88,32 @@ try {
     $db = getDB();
     $db->beginTransaction();
     
-    // Create booking with payment details
+    // Get therapist data for accurate pricing
+    $therapist = getTherapistById($therapist_id);
+    if (!$therapist) {
+        throw new Exception('Therapist not found');
+    }
+    
+    // Calculate and verify pricing
+    $basePrice = ($pricing_type === 'in_city') ? 
+        $therapist['in_city_price'] : 
+        $therapist['out_city_price'];
+    
+    $isNightBooking = isNightTime($booking_time);
+    $nightFee = ($isNightBooking && $therapist['night_fee_enabled']) ? 1500 : 0;
+    $calculatedTotal = $basePrice + $nightFee;
+    
+    // Use calculated amount for security
+    $total_amount = $calculatedTotal;
+    
+    // Create booking with payment details and accurate pricing
     $stmt = $db->prepare("
-        INSERT INTO bookings (therapist_id, full_name, email, phone, booking_date, booking_time, message, total_amount, payment_id, payment_status, status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', 'confirmed')
+        INSERT INTO bookings (
+            therapist_id, full_name, email, phone, booking_date, booking_time, 
+            message, total_amount, base_amount, night_fee, user_location,
+            is_night_booking, pricing_type, payment_id, payment_status, status
+        ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', 'confirmed')
     ");
     
     $result = $stmt->execute([
@@ -101,6 +125,11 @@ try {
         $booking_time,
         $message,
         $total_amount,
+        $basePrice,
+        $nightFee,
+        $user_location,
+        $isNightBooking,
+        $pricing_type,
         $paymentId
     ]);
     

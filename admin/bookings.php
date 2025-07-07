@@ -116,11 +116,26 @@ $bookings = getAllBookings();
                                             <i class="bi bi-calendar me-1"></i><?php echo date('M j, Y', strtotime($booking['booking_date'])); ?><br>
                                             <small class="text-muted">
                                                 <i class="bi bi-clock me-1"></i><?php echo date('g:i A', strtotime($booking['booking_time'])); ?>
+                                                <?php if ($booking['is_night_booking']): ?>
+                                                    <span class="badge bg-warning ms-1">Night</span>
+                                                <?php endif; ?>
                                             </small>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="fw-bold text-success"><?php echo formatPrice($booking['total_amount']); ?></span>
+                                        <div>
+                                            <span class="fw-bold text-success"><?php echo formatPrice($booking['total_amount']); ?></span>
+                                            <br>
+                                            <small class="text-muted">
+                                                <?php 
+                                                $pricingType = $booking['pricing_type'] ?? 'in_city';
+                                                echo ucfirst(str_replace('_', '-', $pricingType));
+                                                if ($booking['night_fee'] > 0) {
+                                                    echo ' + Night Fee';
+                                                }
+                                                ?>
+                                            </small>
+                                        </div>
                                     </td>
                                     <td>
                                         <span class="badge bg-<?php echo (isset($booking['payment_id']) && $booking['payment_id']) ? 'primary' : 'secondary'; ?>">
