@@ -249,116 +249,14 @@ function handleBookingSubmission(e) {
                 
                 // Close modal after 2 seconds
                 setTimeout(() => {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('bookingModal'));
-                    if (modal) modal.hide();
-                }, 2000);
-            } else {
-                showAlert('danger', data.message || 'Booking failed. Please try again.');
+                }
+                )
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('danger', 'An error occurred. Please try again.');
-        })
-        .finally(() => {
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-        });
-    }
-}
-
-function verifyPaymentAndCompleteBooking(paymentResponse, formData) {
-    // Add payment details to form data
-    formData.append('payment_id', paymentResponse.razorpay_payment_id);
-    formData.append('order_id', paymentResponse.razorpay_order_id);
-    formData.append('signature', paymentResponse.razorpay_signature);
-    
-    fetch('verify_payment_and_book.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('success', 'Payment successful! Your booking is confirmed.');
-            document.getElementById('bookingForm').reset();
-            
-            // Close modal after 2 seconds
-            setTimeout(() => {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('bookingModal'));
-                if (modal) modal.hide();
-            }, 2000);
-        } else {
-            showAlert('danger', 'Payment verification failed. Please contact support.');
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('danger', 'Payment verification failed. Please contact support.');
-    });
-}
-
-// Booking modal functions
-function openBookingModal(therapistId) {
-    // Set therapist ID in all forms
-    const inquiryTherapistId = document.getElementById('inquiryTherapistId');
-    const bookingTherapistId = document.getElementById('bookingTherapistId');
-    
-    if (inquiryTherapistId) inquiryTherapistId.value = therapistId;
-    if (bookingTherapistId) bookingTherapistId.value = therapistId;
-    
-    // Fetch therapist details for pricing
-    fetch(`get_therapist_details.php?id=${therapistId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const bookingAmount = document.getElementById('bookingAmount');
-                const displayAmount = document.getElementById('displayAmount');
-                
-                if (bookingAmount) {
-                    bookingAmount.value = data.therapist.price_per_session;
-                }
-                
-                if (displayAmount) {
-                    displayAmount.textContent = `₹${data.therapist.price_per_session}`;
-                }
-                
-                // Update WhatsApp buttons
-                updateWhatsAppButtons(data.therapist);
-            }
-        })
-        .catch(error => console.error('Error fetching therapist details:', error));
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
-    modal.show();
-}
-
-function updateWhatsAppButtons(therapist) {
-    const generalBtn = document.getElementById('whatsappGeneralBtn');
-    const bookingBtn = document.getElementById('whatsappBookingBtn');
-    
-    if (generalBtn) {
-        generalBtn.onclick = () => openWhatsAppChat(therapist.name, 'general');
-    }
-    
-    if (bookingBtn) {
-        bookingBtn.onclick = () => openWhatsAppChat(therapist.name, 'booking');
+        )
     }
 }
-
-function openWhatsAppChat(therapistName, type = 'general') {
-    let message = '';
-    
-    if (type === 'booking') {
-        message = `Hi! I'm interested in booking a session with ${therapistName}. Could you please provide more information about availability and pricing?`;
-    } else {
-        message = `Hi! I have some questions about ${therapistName}'s services. Could you please help me?`;
-    }
-    
-    const whatsappUrl = `https://wa.me/917005120041?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-}
+// Note: openBookingModal and related functions are now handled by pricing-system.js
 
 // Smooth scrolling for anchor links
 function initializeSmoothScrolling() {
@@ -439,8 +337,6 @@ function createAlertContainer() {
 window.changeSlide = changeSlide;
 window.currentSlide = currentSlide;
 window.changeMainImage = changeMainImage;
-window.openBookingModal = openBookingModal;
-window.openWhatsAppChat = openWhatsAppChat;
 window.showAlert = showAlert;
 
 // Set Razorpay availability globally

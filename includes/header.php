@@ -11,8 +11,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="<?php echo SITE_URL; ?>/assets/css/style.css" rel="stylesheet">
-    <!-- Pricing System JS -->
-    <script src="<?php echo SITE_URL; ?>/assets/js/pricing-system.js"></script>
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -186,3 +184,14 @@
         }
     </script>
     <?php endif; ?>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="<?php echo SITE_URL; ?>/assets/js/main.js"></script>
+    <!-- Pricing System JS -->
+    <script src="<?php echo SITE_URL; ?>/assets/js/pricing-system.js"></script>
+    
+    <?php if (isset($extraScripts)) echo $extraScripts; ?>
+</body>
+</html>

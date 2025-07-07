@@ -710,6 +710,10 @@ function initializeDatabase() {
     try {
         $db = getDB();
         
+        // Enable error reporting for debugging
+        error_reporting(E_ALL);
+        ini_set('display_errors', 1);
+        
         // Create tables if they don't exist
         $tables = [
             "CREATE TABLE IF NOT EXISTS admins (
