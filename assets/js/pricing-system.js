@@ -141,10 +141,10 @@ class PricingSystem {
         const bookingModal = document.getElementById('bookingModal');
         if (!bookingModal || !bookingModal.classList.contains('show')) return;
 
-        // Update pricing type radio buttons
-        const pricingRadio = document.querySelector(`input[name="bookingPricingType"][value="${this.currentPricingType}"]`);
-        if (pricingRadio) {
-            pricingRadio.checked = true;
+        // Update pricing type hidden field
+        const pricingTypeField = document.getElementById('bookingPricingType');
+        if (pricingTypeField) {
+            pricingTypeField.value = this.currentPricingType;
         }
 
         // Recalculate booking prices
@@ -209,13 +209,6 @@ class PricingSystem {
             }
         });
 
-        // Listen for booking pricing type changes
-        document.addEventListener('change', (e) => {
-            if (e.target.name === 'bookingPricingType') {
-                this.setPricingType(e.target.value);
-            }
-        });
-
         // Listen for time changes in booking form
         document.addEventListener('change', (e) => {
             if (e.target.id === 'bookingTimeSelect') {
@@ -229,6 +222,15 @@ class PricingSystem {
 let pricingSystem;
 document.addEventListener('DOMContentLoaded', function() {
     pricingSystem = new PricingSystem();
+    
+    // Auto-dismiss registration success alert
+    setTimeout(() => {
+        const alert = document.querySelector('.alert-success');
+        if (alert) {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }
+    }, 5000);
 });
 
 // Global functions for backward compatibility

@@ -325,104 +325,18 @@
 <?php endif; ?>
 
 <script>
-// Global variables for pricing
-let currentTherapistId = null;
-let currentTherapistData = null;
-
-// Function to check if time is night time (22:00 to 06:00)
-function isNightTime(time) {
-    if (!time) return false;
-    const hour = parseInt(time.split(':')[0]);
-    return hour >= 22 || hour < 6;
-}
-
-// Function to update booking pricing based on location and time
-function updateBookingPricing() {
-    if (!currentTherapistData) return;
-    
-    const pricingType = document.querySelector('input[name="bookingPricingType"]:checked')?.value || 'in_city';
-    const time = document.getElementById('bookingTimeSelect')?.value;
-    
-    // Get base price based on pricing type
-    const basePrice = pricingType === 'in_city' ? 
-        parseFloat(currentTherapistData.in_city_price) : 
-        parseFloat(currentTherapistData.out_city_price);
-    
-    // Calculate night fee
-    const nightFee = (time && isNightTime(time) && currentTherapistData.night_fee_enabled) ? 1500 : 0;
-    const totalPrice = basePrice + nightFee;
-    
-    // Update display
-    document.getElementById('baseAmountDisplay').textContent = '₹' + new Intl.NumberFormat('en-IN').format(basePrice);
-    document.getElementById('nightFeeDisplay').textContent = '₹' + new Intl.NumberFormat('en-IN').format(nightFee);
-    document.getElementById('displayAmount').textContent = '₹' + new Intl.NumberFormat('en-IN').format(totalPrice);
-    document.getElementById('bookingAmount').value = totalPrice;
-    
-    // Update pricing info
-    const locationText = pricingType === 'in_city' ? 'In-City' : 'Out-City';
-    const nightText = nightFee > 0 ? ' + Night Fee (₹1500)' : '';
-    document.getElementById('pricingInfo').innerHTML = 
-        `<i class="bi bi-info-circle me-1"></i>${locationText} pricing${nightText}`;
-}
-
-// Add event listeners for booking pricing toggles
+// Booking modal integration with pricing system
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('input[name="bookingPricingType"]').forEach(radio => {
-        radio.addEventListener('change', updateBookingPricing);
+    // Update pricing type hidden field when location changes
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.location-toggle-btn')) {
+            const btn = e.target.closest('.location-toggle-btn');
+            const type = btn.dataset.type;
+            const pricingTypeField = document.getElementById('bookingPricingType');
+            if (pricingTypeField) {
+                pricingTypeField.value = type;
+            }
+        }
     });
 });
-
-// Function to open booking modal with therapist data
-function openBookingModal(therapistId) {
-    currentTherapistId = therapistId;
-    
-    // Set therapist ID in all forms
-    const inquiryTherapistId = document.getElementById('inquiryTherapistId');
-    const bookingTherapistId = document.getElementById('bookingTherapistId');
-    
-    if (inquiryTherapistId) inquiryTherapistId.value = therapistId;
-    if (bookingTherapistId) bookingTherapistId.value = therapistId;
-    
-    // Fetch therapist details
-    fetch(`get_therapist_details.php?id=${therapistId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                currentTherapistData = data.therapist;
-                updateBookingPricing();
-                updateWhatsAppButtons(data.therapist);
-            }
-        })
-        .catch(error => console.error('Error fetching therapist details:', error));
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
-    modal.show();
-}
-
-function updateWhatsAppButtons(therapist) {
-    const generalBtn = document.getElementById('whatsappGeneralBtn');
-    const bookingBtn = document.getElementById('whatsappBookingBtn');
-    
-    if (generalBtn) {
-        generalBtn.onclick = () => openWhatsAppChat(therapist.name, 'general');
-    }
-    
-    if (bookingBtn) {
-        bookingBtn.onclick = () => openWhatsAppChat(therapist.name, 'booking');
-    }
-}
-
-function openWhatsAppChat(therapistName, type = 'general') {
-    let message = '';
-    
-    if (type === 'booking') {
-        message = `Hi! I'm interested in booking a session with ${therapistName}. Could you please provide more information about availability and pricing?`;
-    } else {
-        message = `Hi! I have some questions about ${therapistName}'s services. Could you please help me?`;
-    }
-    
-    const whatsappUrl = `https://wa.me/917005120041?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-}
 </script>

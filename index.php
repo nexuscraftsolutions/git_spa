@@ -23,10 +23,21 @@ try {
 }
 
 // Get user's location for pricing
-$userLocation = $_SESSION['user_city'] ?? detectUserLocation()['city'];
+$userLocation = $_SESSION['user_city'] ?? 'Delhi';
+
+// Show registration success message
+$showRegistrationSuccess = isset($_GET['registered']) && $_GET['registered'] == '1';
 ?>
 
 <?php include 'includes/header.php'; ?>
+
+<?php if ($showRegistrationSuccess): ?>
+    <div class="alert alert-success alert-dismissible fade show position-fixed" style="top: 100px; right: 20px; z-index: 9999;">
+        <i class="bi bi-check-circle me-2"></i>
+        <strong>Welcome!</strong> Your account has been created and you're now logged in.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
 
 <!-- Hero Section -->
 <section class="hero-section">

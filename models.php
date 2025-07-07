@@ -176,34 +176,11 @@ try {
 
 <?php 
 $extraScripts = '<script>
-    // Pricing toggle functionality
-    document.querySelectorAll("input[name=\"pricingType\"]").forEach(radio => {
-        radio.addEventListener("change", function() {
-            const priceType = this.value;
-            
-            // Update all dynamic prices
-            document.querySelectorAll(".dynamic-price").forEach(priceElement => {
-                const inCityPrice = parseFloat(priceElement.dataset.inCity);
-                const outCityPrice = parseFloat(priceElement.dataset.outCity);
-                const price = priceType === "in_city" ? inCityPrice : outCityPrice;
-                
-                priceElement.textContent = "₹" + new Intl.NumberFormat("en-IN").format(price);
-            });
-            
-            // Store preference in localStorage
-            localStorage.setItem("preferredPricingType", priceType);
-        });
-    });
-    
-    // Load saved pricing preference
+    // Initialize pricing system for models page
     document.addEventListener("DOMContentLoaded", function() {
-        const savedPricingType = localStorage.getItem("preferredPricingType");
-        if (savedPricingType) {
-            const radio = document.getElementById(savedPricingType === "in_city" ? "inCityPricing" : "outCityPricing");
-            if (radio) {
-                radio.checked = true;
-                radio.dispatchEvent(new Event("change"));
-            }
+        // Ensure pricing system is loaded
+        if (typeof pricingSystem !== "undefined") {
+            pricingSystem.updateAllPrices();
         }
     });
 </script>';
