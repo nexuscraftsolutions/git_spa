@@ -1330,6 +1330,15 @@ body {
         padding: 10px;
         font-size: 12px;
     }
+    
+    /* Location toggle buttons */
+    .location-toggle-hero .btn-group {
+        flex-direction: column;
+    }
+    
+    .location-toggle-hero .btn {
+        margin-bottom: 0.5rem;
+    }
 }
 
 /*Custom CSS*/
@@ -1340,4 +1349,77 @@ body {
 
 #alertContainer {
     background-color: #fff;
+}
+
+/* Location Toggle Styles */
+.location-toggle-btn {
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.location-toggle-btn.active {
+    background: var(--gradient-primary) !important;
+    color: white !important;
+    border-color: var(--primary-color) !important;
+}
+
+.location-toggle-btn:not(.active) {
+    background: transparent;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.location-toggle-btn:not(.active):hover {
+    background: var(--secondary-color);
+    transform: translateY(-1px);
+}
+
+/* Location popup styles */
+#locationPricingPopup .location-btn {
+    padding: 1.5rem;
+    height: auto;
+    transition: all 0.3s ease;
+}
+
+#locationPricingPopup .location-btn:hover {
+    background: var(--gradient-primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(46, 139, 87, 0.3);
+}
+
+/* Hero location toggle */
+.location-toggle-hero {
+    margin: 1rem 0;
+}
+
+.location-toggle-hero .btn {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.location-toggle-hero .btn.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Pricing info animations */
+.dynamic-price {
+    transition: all 0.3s ease;
+}
+
+.dynamic-price.updating {
+    transform: scale(1.05);
+    color: var(--primary-color);
+}
+
+/* Night fee indicator */
+.night-fee-indicator {
+    background: linear-gradient(45deg, #ffc107, #ff8c00);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
 }

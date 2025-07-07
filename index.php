@@ -36,6 +36,24 @@ $userLocation = $_SESSION['user_city'] ?? detectUserLocation()['city'];
                 <h1 class="display-4 fw-bold mb-4 fade-in">Welcome to Hammam Spa</h1>
                 <p class="lead mb-4 fade-in">Experience ultimate relaxation with our professional therapists and premium spa services. Rejuvenate your mind, body, and soul in our tranquil sanctuary.</p>
                 
+                <!-- Location Toggle Buttons in Hero -->
+                <div class="location-toggle-hero mb-4 fade-in">
+                    <div class="btn-group" role="group" aria-label="Location pricing">
+                        <button class="btn btn-outline-light location-toggle-btn active" data-type="in_city">
+                            <i class="bi bi-building me-2"></i>In-City Pricing
+                        </button>
+                        <button class="btn btn-outline-light location-toggle-btn" data-type="out_city">
+                            <i class="bi bi-geo-alt me-2"></i>Out-City Pricing
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-white-50">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Switch between In-City (Delhi & nearby) and Out-City pricing
+                        </small>
+                    </div>
+                </div>
+                
                 <div class="d-flex gap-3 fade-in">
                     <a href="models.php" class="btn btn-light btn-lg">
                         <i class="bi bi-people me-2"></i>View Therapists

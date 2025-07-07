@@ -119,17 +119,23 @@
                                 <!-- Price Toggle for Booking -->
                                 <div class="card mb-4">
                                     <div class="card-body">
-                                        <h6 class="mb-3">Select Pricing Type</h6>
+                                        <h6 class="mb-3">
+                                            <i class="bi bi-geo-alt me-2"></i>Location-Based Pricing
+                                        </h6>
                                         <div class="btn-group w-100" role="group" aria-label="Booking pricing options">
-                                            <input type="radio" class="btn-check" name="bookingPricingType" id="bookingInCity" value="in_city" checked>
-                                            <label class="btn btn-outline-primary" for="bookingInCity">
+                                            <button class="btn btn-primary location-toggle-btn active" data-type="in_city">
                                                 <i class="bi bi-building me-2"></i>In-City
-                                            </label>
+                                            </button>
                                             
-                                            <input type="radio" class="btn-check" name="bookingPricingType" id="bookingOutCity" value="out_city">
-                                            <label class="btn btn-outline-primary" for="bookingOutCity">
+                                            <button class="btn btn-outline-primary location-toggle-btn" data-type="out_city">
                                                 <i class="bi bi-geo-alt me-2"></i>Out-City
-                                            </label>
+                                            </button>
+                                        </div>
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <i class="bi bi-info-circle me-1"></i>
+                                                Your current selection will be used for pricing calculation
+                                            </small>
                                         </div>
                                     </div>
                                 </div>
@@ -138,6 +144,7 @@
                                     <input type="hidden" name="type" value="booking">
                                     <input type="hidden" name="therapist_id" id="bookingTherapistId">
                                     <input type="hidden" name="total_amount" id="bookingAmount">
+                                    <input type="hidden" name="pricing_type" id="bookingPricingType">
                                     <input type="hidden" name="user_location" id="bookingUserLocation" value="<?php echo htmlspecialchars($_SESSION['user_city'] ?? 'Delhi'); ?>">
                                     
                                     <div class="row g-3">
@@ -162,30 +169,43 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Preferred Time *</label>
-                                            <select class="form-control" name="booking_time" id="bookingTimeSelect" onchange="updateBookingPricing()" required>
+                                            <select class="form-control" name="booking_time" id="bookingTimeSelect" required>
                                                 <option value="">Select time</option>
-                                                <option value="09:00">09:00 (9:00 AM)</option>
-                                                <option value="10:00">10:00 (10:00 AM)</option>
-                                                <option value="11:00">11:00 (11:00 AM)</option>
-                                                <option value="12:00">12:00 (12:00 PM)</option>
-                                                <option value="13:00">13:00 (1:00 PM)</option>
-                                                <option value="14:00">14:00 (2:00 PM)</option>
-                                                <option value="15:00">15:00 (3:00 PM)</option>
-                                                <option value="16:00">16:00 (4:00 PM)</option>
-                                                <option value="17:00">17:00 (5:00 PM)</option>
-                                                <option value="18:00">18:00 (6:00 PM)</option>
-                                                <option value="19:00">19:00 (7:00 PM)</option>
-                                                <option value="20:00">20:00 (8:00 PM)</option>
-                                                <option value="21:00">21:00 (9:00 PM)</option>
-                                                <option value="22:00">22:00 (10:00 PM)</option>
-                                                <option value="23:00">23:00 (11:00 PM)</option>
-                                                <option value="00:00">00:00 (12:00 AM)</option>
-                                                <option value="01:00">01:00 (1:00 AM)</option>
-                                                <option value="02:00">02:00 (2:00 AM)</option>
-                                                <option value="03:00">03:00 (3:00 AM)</option>
-                                                <option value="04:00">04:00 (4:00 AM)</option>
-                                                <option value="05:00">05:00 (5:00 AM)</option>
+                                                <!-- Day Time Slots -->
+                                                <optgroup label="Day Time (Regular Pricing)">
+                                                    <option value="06:00">06:00 (6:00 AM)</option>
+                                                    <option value="07:00">07:00 (7:00 AM)</option>
+                                                    <option value="08:00">08:00 (8:00 AM)</option>
+                                                    <option value="09:00">09:00 (9:00 AM)</option>
+                                                    <option value="10:00">10:00 (10:00 AM)</option>
+                                                    <option value="11:00">11:00 (11:00 AM)</option>
+                                                    <option value="12:00">12:00 (12:00 PM)</option>
+                                                    <option value="13:00">13:00 (1:00 PM)</option>
+                                                    <option value="14:00">14:00 (2:00 PM)</option>
+                                                    <option value="15:00">15:00 (3:00 PM)</option>
+                                                    <option value="16:00">16:00 (4:00 PM)</option>
+                                                    <option value="17:00">17:00 (5:00 PM)</option>
+                                                    <option value="18:00">18:00 (6:00 PM)</option>
+                                                    <option value="19:00">19:00 (7:00 PM)</option>
+                                                    <option value="20:00">20:00 (8:00 PM)</option>
+                                                    <option value="21:00">21:00 (9:00 PM)</option>
+                                                </optgroup>
+                                                <!-- Night Time Slots -->
+                                                <optgroup label="Night Time (+₹1500 Night Fee)">
+                                                    <option value="22:00">22:00 (10:00 PM) + Night Fee</option>
+                                                    <option value="23:00">23:00 (11:00 PM) + Night Fee</option>
+                                                    <option value="00:00">00:00 (12:00 AM) + Night Fee</option>
+                                                    <option value="01:00">01:00 (1:00 AM) + Night Fee</option>
+                                                    <option value="02:00">02:00 (2:00 AM) + Night Fee</option>
+                                                    <option value="03:00">03:00 (3:00 AM) + Night Fee</option>
+                                                    <option value="04:00">04:00 (4:00 AM) + Night Fee</option>
+                                                    <option value="05:00">05:00 (5:00 AM) + Night Fee</option>
+                                                </optgroup>
                                             </select>
+                                            <small class="form-text text-muted">
+                                                <i class="bi bi-moon me-1"></i>
+                                                Night fee (₹1500) automatically applies for 22:00-06:00 slots
+                                            </small>
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label">Special Requests</label>

@@ -11,6 +11,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="<?php echo SITE_URL; ?>/assets/css/style.css" rel="stylesheet">
+    <!-- Pricing System JS -->
+    <script src="<?php echo SITE_URL; ?>/assets/js/pricing-system.js"></script>
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -40,6 +42,24 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="<?php echo SITE_URL; ?>">Home</a>
+                    </li>
+                    <!-- Location Toggle Buttons in Navbar -->
+                    <li class="nav-item dropdown d-none d-lg-block">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-geo-alt me-1"></i>Location
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <button class="dropdown-item location-toggle-btn active" data-type="in_city">
+                                    <i class="bi bi-building me-2"></i>In-City (Delhi & nearby)
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item location-toggle-btn" data-type="out_city">
+                                    <i class="bi bi-geo-alt me-2"></i>Out-City (Outside Delhi)
+                                </button>
+                            </li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="<?php echo SITE_URL; ?>/models.php">Therapists</a>

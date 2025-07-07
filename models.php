@@ -36,29 +36,31 @@ try {
     </div>
 </section>
 
-<!-- Price Toggle Section -->
-<section class="py-3 bg-light">
+<!-- Enhanced Price Toggle Section -->
+<section class="py-4 bg-light">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-md-6">
+            <div class="col-md-8">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h6 class="mb-3">Select Pricing Type</h6>
-                        <div class="btn-group w-100" role="group" aria-label="Pricing options">
-                            <input type="radio" class="btn-check" name="pricingType" id="inCityPricing" value="in_city" checked>
-                            <label class="btn btn-outline-primary" for="inCityPricing">
+                        <h5 class="mb-3">
+                            <i class="bi bi-geo-alt me-2"></i>Select Your Location for Accurate Pricing
+                        </h5>
+                        <div class="btn-group w-100 mb-3" role="group" aria-label="Pricing options">
+                            <button class="btn btn-primary location-toggle-btn active" data-type="in_city">
                                 <i class="bi bi-building me-2"></i>In-City Pricing
-                            </label>
+                                <br><small>Delhi & nearby areas</small>
+                            </button>
                             
-                            <input type="radio" class="btn-check" name="pricingType" id="outCityPricing" value="out_city">
-                            <label class="btn btn-outline-primary" for="outCityPricing">
+                            <button class="btn btn-outline-primary location-toggle-btn" data-type="out_city">
                                 <i class="bi bi-geo-alt me-2"></i>Out-City Pricing
-                            </label>
+                                <br><small>Outside Delhi</small>
+                            </button>
                         </div>
                         <div class="mt-2">
                             <small class="text-muted">
                                 <i class="bi bi-info-circle me-1"></i>
-                                In-City: Delhi & nearby areas | Out-City: Outside Delhi
+                                Prices update automatically based on your selection. Night fee (₹1500) applies for 10 PM - 6 AM bookings.
                             </small>
                         </div>
                     </div>

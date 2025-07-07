@@ -285,6 +285,7 @@ function loginUser($identifier, $password) {
             $_SESSION['user_phone'] = $user['phone'];
             $_SESSION['user_city'] = $user['city'];
             $_SESSION['user_role'] = $user['role'];
+            $_SESSION['login_time'] = time();
             
             return ['success' => true, 'user' => $user];
         }

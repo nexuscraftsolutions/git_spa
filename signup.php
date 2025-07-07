@@ -38,9 +38,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $result = registerUser($name, $email, $phone, $city, $password);
         if ($result['success']) {
-            $success = 'Account created successfully! You can now sign in.';
-            // Clear form data
-            $name = $email = $phone = $city = '';
+            // Auto-login the user after successful registration
+            $loginResult = loginUser($email ?: $phone, $password);
+            if ($loginResult['success']) {
+                // Redirect to home page after successful registration and login
+                header('Location: index.php?registered=1');
+                exit;
+            } else {
+                $success = 'Account created successfully! You can now sign in.';
+                // Clear form data
+                $name = $email = $phone = $city = '';
+            }
         } else {
             $error = $result['message'];
         }
